@@ -45,6 +45,7 @@ jobs:
         working-directory: frontend
         run: npm run build
         env:
+          CI: false
           NODE_OPTIONS: --max-old-space-size=4096
 
       - name: Deploy frontend build
