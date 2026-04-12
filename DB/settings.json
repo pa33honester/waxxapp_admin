@@ -1,0 +1,77 @@
+[{
+  "_id": {
+    "$oid": "6436376738292b4945610771"
+  },
+  "privacyPolicyLink": "<h4>Privacy Policy for Era</h4><h5>How We Use Your Information</h5><h6>Personal Information:</h6><p><span style=\"color: rgb(187, 187, 187);\">We use your email address for account management and to communicate with you about updates or important information. </span></p><h6>Usage Data:</h6><p><span style=\"color: rgb(187, 187, 187);\">We analyze usage patterns to improve our app's content and user experience. </span></p><h6>Device Information:</h6><p><span style=\"color: rgb(187, 187, 187);\">We use device information for technical purposes, such as troubleshooting and ensuring compatibility.</span></p><h6>Information Sharing</h6><p><span style=\"color: rgb(187, 187, 187);\">We do not sell, trade, or otherwise transfer your personally identifiable information to third parties. We may share aggregated and anonymized data for statistical purposes.</span></p><h6>Security</h6><p><span style=\"color: rgb(187, 187, 187);\">We take reasonable measures to protect your personal information from unauthorized access or disclosure. However, no method of transmission over the Internet or electronic storage is completely secure. </span></p><h6>Your Choices</h6><p><span style=\"color: rgb(187, 187, 187);\">You can manage your account settings and preferences within the app. You may opt out of promotional emails at any time by following the unsubscribe instructions in the email. </span></p><h6>Changes to This Privacy Policy</h6><p><span style=\"color: rgb(187, 187, 187);\">We may update this Privacy Policy from time to time. Any changes will be posted on this page, and the \"Last Updated\" date will be revised accordingly. </span></p><h6>Contact Us</h6><ol><li><span style=\"color: rgb(187, 187, 187);\">If you have any questions or concerns about this Privacy Policy, please contact us at [your contact email]. By using Wallki, you agree to the terms outlined in this Privacy Policy.</span></li></ol>",
+  "privacyPolicyText": "Privacy Policy Text",
+  "withdrawCharges": 10,
+  "withdrawLimit": 1000,
+  "createdAt": {
+    "$date": "2023-04-12T04:45:27.628Z"
+  },
+  "updatedAt": {
+    "$date": "2025-09-27T10:32:32.623Z"
+  },
+  "cancelOrderCharges": 20,
+  "paymentGateway": [
+    {
+      "name": "paytm"
+    },
+    {
+      "name": "phonePe"
+    }
+  ],
+  "adminCommissionCharges": 50,
+  "isAddProductRequest": true,
+  "razorPayId": "Razor Pay Id",
+  "razorPaySwitch": true,
+  "razorSecretKey": "rzp_test_SjZz9HC7RGCfCb",
+  "stripePublishableKey": "pk_test_51OFsHfSEMYOcpDHW9N2WeARWsZWPsnWR9reSE7shbyqUPbQpCmLv113AULXO9w6tLN1EbAmxUp3mcuCBHfJkHQJd00Qwe8Wq8v",
+  "stripeSecretKey": "sk_test_51OFsHfSEMYOcpDHWKU0EJzlAUaoU7q3f8aI8wDdOjsRP0VER1nK0Jo0Q625NaLrSztqFvc5k40yN8iEGLczHKCdD00p2Fnyzm8",
+  "stripeSwitch": true,
+  "isUpdateProductRequest": true,
+  "isFakeData": true,
+  "zegoAppId": "zegoAppId",
+  "zegoAppSignIn": "zegoAppSignIn",
+  "privateKey": {
+    "type": "service_account",
+    "project_id": "era-shop-cf3c0963",
+    "private_key_id": "a09321daa7c0b8a6ee6f40fd64a8398c2f8e8420",
+    "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCfMqU3axcn9Ppz\n/58nVSy6pLEiTQXXV0isow4hRZSKrrbxclM1QRSdNc+F8pbmd1ooD1bQFjONK4Qo\nJ6KhjWdqzKZ6/64m554Uw+KPGQ+SyrZrfRCTK5zTPk8hLoPpLWyj7WRHezZWdLPG\nVU9dbyDOYYQVxqPMV9VdmDXJFxk8m0C5dl32bPVoPUPi6kuTQ1DtA+wyA3dS/JD9\nLjeiHoSbdXjUPs2hPGgQZplg4gLtOF5YDjAZs6qIze5win4YFcagnjrZJ0XF3OQI\n6D53Qv7qIpZj0s48mH5yqy9B6AKUkLP3l8CvRVFVKKkTmnLtnWWxZzp64IfOMsVx\nRsETjoOfAgMBAAECggEACBhWr2E6LbV20NQ0PxdFLX53ZWOeQut0zhaCfu2fVof4\n1IE4OvKCvlXApjKGOtTh2DyjcPRYDbsjPrl5OxbKJfOfGY0LyX2om6y0RguDr7aw\nHPogkCM9F77I3kqTuZUuO420NjBNPIs1owWugfVHKUdrJIJTzO3Ac0Bsp7uNdHfq\nA8wvRirvjhl3IkMRUPme4+F5Bv5Ku/dHPgz/qS7wHD4rkz0IXfHy+c8Nw+aCdufY\nWxDbc0E29s9QhXSS9+yk8Fuh96M+0fcOUUqpCjlHorLsVsbAuMhyIvXYkDYfeYCR\nWav1qFKRgAhNPnUoRIDojEkevhNJjE50KOU11UrZvQKBgQDMdVuxZlFO5dCxWzj8\nhB2LxRei7TBIQyo1QC8p9cAUuioNxVtJq5L4L9/3CbAoNjxbwouofJ1ufc4ifI+X\nKxCIozRhugZ8B4VGMsfq9losile4+eeFt/3ETcm6CGWfWdoxeiKwhT34k5gwi3JJ\niFJGmtIJQ1PXgIEG+pgVhiQqTQKBgQDHVGm3LOFALv8zy2Ss96VM5TdOpheJEvho\nAQojNQXNs2l37rF1rEZ2KArVlSDZalVegUpCKRPCb7ASQqK4LnY3HUm2dJK21G/y\nT5RCYbwV3IrVS0LbeGpp/Yz0eKPxfSiFUGEGxUNRVdczOJRryyRmjbdpvaxxpnVx\nim9QrNIDmwKBgDyBFktfHfydIa76cdi4OA4emyoJytn3lkv/3HUsVlVL6hn9J1Cb\nx3hOopZ2dXzQ3/e/kJihl+0UqaWm+s8fXVsyANRSuoyFpTjq2iJ8GJ9JqUACJDN8\nCUrIQkQdLAWGD33IyO833ujqtITZH08HWmGuey1mkS8axhQMoGjuM1GZAoGAOE6X\nImByLOBZxPbStK2sK0Gg0v3GLjmGpFKO240x236v72olBRmqOdxr2xOqWOBZxz18\njZ3u8AD+2tmp/59YU49ZcEoT28O879UdC3dyWzaWnVQKSdcFMHWoaLLflOsHFEm1\nbuUwc/xssxJrktuqp7Gmux8SZHRiPrWdZku7c7sCgYEAiuA8fHiMxFMhsOLQkRqW\nraykYWkgjrasK8lCvevvmnyUJvWMjReotgGCs03RLw8Q8w7DdIRvTsKGv9Ino1Du\nvUohZiGSX6McFFoLNeaOUMPeCgG32jQZLBjIDfO5TyN9mM+LceK1WR7In5cyPO2J\n3BeTpLvM3hEyAOYCcMX1ZVs=\n-----END PRIVATE KEY-----\n",
+    "client_email": "firebase-adminsdk-dzsuv@era-shop-cf3c0.iam.gserviceaccount.com",
+    "client_id": "109638217993911454927",
+    "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+    "token_uri": "https://oauth2.googleapis.com/token",
+    "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+    "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/firebase-adminsdk-dzsuv%40era-shop-cf3c0.iam.gserviceaccount.com",
+    "universe_domain": "googleapis.com"
+  },
+  "flutterWaveId": "FLWPUBK_TEST-94c5f470ca54b0ecaca6e2b4f0985a55-X",
+  "flutterWaveSwitch": true,
+  "currency": {
+    "name": "USD",
+    "symbol": "$",
+    "countryCode": "IN",
+    "currencyCode": "USD",
+    "isDefault": true
+  },
+  "resendApiKey": "resendApiKey",
+  "minPayout": 1,
+  "paymentReminderForLiveAuction": 2,
+  "paymentReminderForManualAuction": 2,
+  "isCashOnDelivery": true,
+  "openaiApiKey": "openaiApiKey",
+  "addressProof": {
+    "isActive": true,
+    "isRequired": true
+  },
+  "govId": {
+    "isActive": true,
+    "isRequired": true
+  },
+  "registrationCert": {
+    "isActive": true,
+    "isRequired": true
+  },
+  "termsAndConditionsLink": "<h4>Terms and Condition for Era</h4><h5>How We Use Your Information</h5><h6>Personal Information:</h6><p><span style=\"color: rgb(187, 187, 187);\">We use your email address for account management and to communicate with you about updates or important information. </span></p><h6>Usage Data:</h6><p><span style=\"color: rgb(187, 187, 187);\">We analyze usage patterns to improve our app's content and user experience. </span></p><h6>Device Information:</h6><p><span style=\"color: rgb(187, 187, 187);\">We use device information for technical purposes, such as troubleshooting and ensuring compatibility.</span></p><h6>Information Sharing</h6><p><span style=\"color: rgb(187, 187, 187);\">We do not sell, trade, or otherwise transfer your personally identifiable information to third parties. We may share aggregated and anonymized data for statistical purposes.</span></p><h6>Security</h6><p><span style=\"color: rgb(187, 187, 187);\">We take reasonable measures to protect your personal information from unauthorized access or disclosure. However, no method of transmission over the Internet or electronic storage is completely secure. </span></p><h6>Your Choices</h6><p><span style=\"color: rgb(187, 187, 187);\">You can manage your account settings and preferences within the app. You may opt out of promotional emails at any time by following the unsubscribe instructions in the email. </span></p><h6>Contact Us</h6><ol><li><span style=\"color: rgb(187, 187, 187);\">If you have any questions or concerns about this </span><span style=\"color: rgb(104, 101, 101);\">Terms and Conditions</span><span style=\"color: rgb(187, 187, 187);\">, please contact us at [your contact email]. By using Wallki, you agree to the terms outlined in these Terms and Conditions.</span></li></ol><h4><br></h4>"
+}]

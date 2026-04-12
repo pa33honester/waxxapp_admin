@@ -1,0 +1,42 @@
+{
+  "name": "waxxapp-backend",
+  "version": "1.0.0",
+  "description": "Node.js Restful CRUD API with Node.js, Express and MongoDB",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "nodemon index.js"
+  },
+  "keywords": [
+    "nodejs",
+    "express",
+    "mongodb"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "agora-access-token": "^2.0.4",
+    "dotenv": "^16.4.5",
+    "bcryptjs": "^2.4.3",
+    "bull": "^4.16.5",
+    "cors": "^2.8.5",
+    "cryptr": "^6.2.0",
+    "dayjs": "^1.11.7",
+    "express": "^4.18.2",
+    "firebase-admin": "^12.7.0",
+    "fs": "^0.0.1-security",
+    "http": "^0.0.1-security",
+    "jsonwebtoken": "^9.0.0",
+    "live-stream-server": "^2.0.1",
+    "moment": "^2.29.4",
+    "moment-timezone": "^0.5.43",
+    "mongoose": "^7.0.2",
+    "morgan": "^1.10.0",
+    "multer": "^1.4.5-lts.1",
+    "node-cron": "^3.0.2",
+    "nodemon": "^2.0.22",
+    "path": "^0.12.7",
+    "resend": "^4.6.0",
+    "socket.io": "^4.6.1"
+  }
+}

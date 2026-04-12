@@ -1,0 +1,70 @@
+[{
+  "_id": {
+    "$oid": "647d8722c35b925ad216f0f9"
+  },
+  "name": "Sizes",
+  "value": [
+    "X",
+    "XS",
+    "M",
+    "L",
+    "XL",
+    "XXL",
+    "3XL",
+    "4XL",
+    "5XL"
+  ],
+  "type": "sizes",
+  "createdAt": {
+    "$date": "2023-06-05T06:56:34.566Z"
+  },
+  "updatedAt": {
+    "$date": "2024-04-19T05:46:41.664Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "647d8a1e054a468c2304d3cf"
+  },
+  "name": "Colors",
+  "value": [
+    "#cb3434",
+    "#d6d6d6",
+    "#d19f9f",
+    "#14ffd0",
+    "#47ff88",
+    "#f50a0a",
+    "#c40ce9",
+    "#c10b0b",
+    "#4dff00",
+    "#ff9f6b",
+    "#c893ec",
+    "#f4a4a4",
+    "#58f9d9",
+    "#50b9dc"
+  ],
+  "type": "colors",
+  "createdAt": {
+    "$date": "2023-06-05T07:09:18.351Z"
+  },
+  "updatedAt": {
+    "$date": "2024-04-19T04:00:09.743Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "6564682fc1413737bdfde8f3"
+  },
+  "name": "SleeveLength",
+  "value": [
+    "full",
+    "short"
+  ],
+  "type": "Sleeve Length",
+  "createdAt": {
+    "$date": "2023-11-27T09:58:07.790Z"
+  },
+  "updatedAt": {
+    "$date": "2024-02-05T03:56:41.407Z"
+  }
+}]

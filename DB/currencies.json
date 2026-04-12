@@ -1,0 +1,32 @@
+[{
+  "_id": {
+    "$oid": "67ef6961fa339c9c88bf1d68"
+  },
+  "name": "INR",
+  "symbol": "₹",
+  "countryCode": "IN",
+  "currencyCode": "INR",
+  "isDefault": true,
+  "createdAt": {
+    "$date": "2025-04-04T05:08:49.637Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-11T10:13:07.084Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "680c76e944b2b014b2251cc6"
+  },
+  "name": "USD",
+  "symbol": "$",
+  "countryCode": "US",
+  "currencyCode": "$",
+  "isDefault": false,
+  "createdAt": {
+    "$date": "2025-04-26T06:02:17.510Z"
+  },
+  "updatedAt": {
+    "$date": "2025-06-11T10:13:06.779Z"
+  }
+}]

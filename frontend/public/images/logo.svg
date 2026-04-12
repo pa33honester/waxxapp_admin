@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="1280" viewBox="0 0 1280 1280" preserveAspectRatio="xMidYMid meet">
+  <title>Waxxapp Logo</title>
+  <desc>Responsive SVG wrapper referencing logo.jpeg for crisp scaling.</desc>
+  <image href="logo.jpeg" x="0" y="0" width="1280" height="1280" preserveAspectRatio="xMidYMid meet" />
+</svg>

@@ -1,0 +1,14 @@
+:root {
+  --fontJakarta--: 'Plus Jakarta Sans', sans-serif;
+
+}
+
+body {
+  margin: 0;
+  font-family: var(--fontJakarta--) !important;
+  background: #fff !important;
+}
+
+code {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+}

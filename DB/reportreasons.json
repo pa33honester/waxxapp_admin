@@ -1,0 +1,120 @@
+[{
+  "_id": {
+    "$oid": "6698ba5bcaca58976a312b9e"
+  },
+  "title": "It's Spam",
+  "createdAt": {
+    "$date": "2024-07-18T06:46:51.622Z"
+  },
+  "updatedAt": {
+    "$date": "2024-07-18T06:46:51.622Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "6684e57c9d072be15c8dc639"
+  },
+  "title": "Hate speech or symbols",
+  "createdAt": {
+    "$date": "2024-07-03T05:45:32.871Z"
+  },
+  "updatedAt": {
+    "$date": "2025-02-20T05:51:52.347Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "6686674510373878d9e71b76"
+  },
+  "title": "Scam or fraud",
+  "createdAt": {
+    "$date": "2024-07-04T09:11:33.824Z"
+  },
+  "updatedAt": {
+    "$date": "2024-07-09T05:11:21.064Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "6686679210373878d9e71b9d"
+  },
+  "title": "Intellectual property violation",
+  "createdAt": {
+    "$date": "2024-07-04T09:12:50.765Z"
+  },
+  "updatedAt": {
+    "$date": "2024-07-09T05:11:28.962Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "6684e62c9d072be15c8dc6ed"
+  },
+  "title": "Violence or dangerous organization",
+  "createdAt": {
+    "$date": "2024-07-03T05:48:28.441Z"
+  },
+  "updatedAt": {
+    "$date": "2024-07-09T05:10:54.691Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "6686672810373878d9e71b65"
+  },
+  "title": "Bullying or harassment",
+  "createdAt": {
+    "$date": "2024-07-04T09:11:04.151Z"
+  },
+  "updatedAt": {
+    "$date": "2024-07-09T05:11:10.866Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "67b6c2d88b6658dd5c250b2e"
+  },
+  "title": "Violence or Graphic Content",
+  "createdAt": {
+    "$date": "2025-02-20T05:51:20.752Z"
+  },
+  "updatedAt": {
+    "$date": "2025-02-20T05:51:20.752Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "6686671f10373878d9e71b63"
+  },
+  "title": "False information",
+  "createdAt": {
+    "$date": "2024-07-04T09:10:55.105Z"
+  },
+  "updatedAt": {
+    "$date": "2024-07-09T05:11:03.001Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "6693801717c6f49d5b3f03f7"
+  },
+  "title": "Copyright Infringement",
+  "createdAt": {
+    "$date": "2024-07-14T07:36:55.313Z"
+  },
+  "updatedAt": {
+    "$date": "2024-07-14T07:36:55.313Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "6684e55f9d072be15c8dc637"
+  },
+  "title": "Nudity or sexual activity",
+  "createdAt": {
+    "$date": "2024-07-03T05:45:03.722Z"
+  },
+  "updatedAt": {
+    "$date": "2024-07-09T05:10:37.900Z"
+  }
+}]

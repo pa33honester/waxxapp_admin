@@ -1,0 +1,173 @@
+:root {
+  --black--: #000;
+  --white--: #fff;
+  --prime--: #b93160;
+  --blackPrime--: #fd90b6;
+  --grayPrime--: #cfcfcf;
+  --inputBorder--: #cbd5e1;
+  --btnPrime--: #b93160;
+  --cardBorder--: #e8e8e82e;
+  --cardBackground--: #ffffff;
+  --fontJakarta--: 'Public Sans', sans-serif;
+
+
+  /* New Color */
+  --themePrime--: #b93160;
+}
+
+/* Start Default CSS */
+
+a {
+  text-decoration: none;
+
+}
+
+li {
+  list-style: none;
+}
+
+ul {
+  margin-bottom: 0;
+  padding-left: 0;
+}
+
+/* End Default CSS */
+
+/* Start Theme Text Color */
+.primeColor {
+  color: var(--themePrime--) !important;
+}
+
+.primeBlackColor {
+  color: var(--black--) !important;
+}
+
+.grayText {
+  color: gray;
+}
+
+/* End Theme Text Color */
+
+/* Default Custom Dynamic CSS */
+
+.themeFont {
+  font-size: 14px;
+  font-weight: 500;
+  color: #FFF;
+  background-color: #FF0000;
+  border: none;
+  outline: none;
+  
+}
+
+.themediv{
+  box-shadow: 0px 0px 8px rgba(0, 0, 0, 0.10);
+}
+
+.themeFontOne {
+  font-size: 14px;
+  font-weight: 500;
+  color: #FFF;
+  background-color: #01B4E1;
+}
+
+.whiteFont {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--white--);
+}
+
+.boxCenter {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #fff;
+  color: #000;
+}
+
+
+.boxCenter:active{
+  fill: #FFF;
+  background-color: #ffffff;
+}
+
+
+.boxBetween {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.boxEnd {
+  display: flex !important;
+  align-items: end !important;
+  justify-content: end !important;
+}
+
+.mainContainer {
+  height: 100vh;
+  overflow: hidden;
+ 
+}
+
+.video-player {
+  width: 100%; /* Ensures it takes the full width of its parent container */
+  height: 100%; 
+  max-height: 400px; /* Limits the height to a max value for responsiveness */
+  border-radius: 8px; /* Rounded corners for a smooth look */
+  object-fit: contain; /* Ensures the video fills the container nicely */
+  box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.15); /* Adds subtle shadow for depth */
+}
+
+
+.containerRight {
+  height: 100vh;
+  overflow-y: scroll;
+  overflow-x: hidden;
+  background-color: #F8F7FA;
+  
+}
+
+.card {
+  border: 1px solid #fffbfbd7 !important;
+  border-radius: 10px;
+  background-color: #ffffff;
+  box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.15);
+
+}
+
+/* chart na box mate  */
+.bcard {
+  /* border: 1px solid gray ; */
+  padding: 12px;
+  border-radius: 5px;
+  box-shadow: 0px 0px 20px rgba(0, 0, 0, 0.10);
+
+  
+}
+
+
+
+.swal-modal {
+  background: #ffffffcc;
+  backdrop-filter: saturate(180%) blur(4px);
+}
+
+button {
+  cursor: pointer !important;
+  word-spacing: 2px;
+}
+
+.infobtn:hover{
+  background-color: #EFEEF0;
+  
+}
+
+
+.acptbtn:hover{
+  background-color: #DAF4F0;
+}
+
+.killbtn:hover{
+  background-color: #FFDFDF;
+}

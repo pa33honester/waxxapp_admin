@@ -1,0 +1,56 @@
+[{
+  "_id": {
+    "$oid": "64d62a59646d2dd559e68abe"
+  },
+  "isView": false,
+  "question": "What is Erashop?",
+  "answer": "Shopping is an activity in which a customer browses the available goods or services presented by one or more retailers with the potential intent to purchase ...",
+  "createdAt": {
+    "$date": "2023-08-11T12:32:25.123Z"
+  },
+  "updatedAt": {
+    "$date": "2024-09-03T16:49:30.385Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "67f6521b6d410e558f4d2413"
+  },
+  "isView": false,
+  "question": "App Usage Tips",
+  "answer": "Learn how to make the most out of your Erashop experience! From browsing categories and saving favorites, to applying filters and viewing product videos, this section helps you understand all the features available in the app.",
+  "createdAt": {
+    "$date": "2025-04-09T10:55:23.557Z"
+  },
+  "updatedAt": {
+    "$date": "2025-04-09T10:55:23.557Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "67f652e96d410e558f4d241b"
+  },
+  "isView": false,
+  "question": "Order & Delivery Info",
+  "answer": "Curious about your delivery timeline? Want to know how shipping works? Here you’ll find all the info you need about order tracking, delivery options, expected arrival times, and what to do if your package is delayed.",
+  "createdAt": {
+    "$date": "2025-04-09T10:58:49.867Z"
+  },
+  "updatedAt": {
+    "$date": "2025-04-09T10:58:49.867Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "67f653076d410e558f4d241d"
+  },
+  "isView": false,
+  "question": "Terms & Privacy Policy",
+  "answer": "Your privacy matters. This section provides links to our Terms of Service and Privacy Policy so you can understand your rights, data usage, and how we protect your personal information.",
+  "createdAt": {
+    "$date": "2025-04-09T10:59:19.590Z"
+  },
+  "updatedAt": {
+    "$date": "2025-04-09T10:59:19.590Z"
+  }
+}]

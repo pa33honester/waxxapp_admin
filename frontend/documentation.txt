@@ -1,0 +1,152 @@
+****************** Dynamic Custom Components For Admin Penal =============
+
+
+======== Input Fields ===========
+
+<Input
+  label={``}  // label name
+  id={``}  // Input Unique Id
+  type={``}  // Input Types ( text, email, password, number, radio, checkbox, file  )
+  name={``}  // Input Name
+  newClass={``} // Extra Class For Input Parent Div
+  value={``}  // Input Value
+  onChange={``} // Use onChange Event
+  value={``}, // Value
+  errorMessage={``}, // Error Message
+  placeholder={``}, // Place Holder
+/>
+
+
+========= Button ============
+
+<Button
+  newClass={``}  // Extra Class For Button
+  btnColor={``}  // Button background Color
+  btnName={``}  // Button Name
+  btnIcon={``} // Button Icon (Priory) {Icon Font Awesome Class}
+  onClick={() => {  // Use onClick Event
+    alert("hello");
+  }}
+  style={``} // Custom Style
+  disabled={``} // true false
+/>
+
+========= Navigator ============
+
+{With Submenu}
+
+<Navigator
+  name={``}  // Menu Name
+  path={``}  // Path Name 
+  navIcon={`fa-solid fa-house`}  // Font Awesome Icon CSS
+  onClick={() => {  // Use onClick Event
+    alert("hello");
+  }}
+>
+    <Navigator 
+      subName={``} // Submenu Name 
+      subPath={``} // Submenu Path 
+    />
+    <Navigator subName={`setting`} subPath={`/admin/setting`} />
+</Navigator>
+
+
+{Without Submenu}
+
+<Navigator
+  name={``}  // Menu Name
+  path={``}  // Path Name 
+  navIcon={`fa-solid fa-house`}  // Font Awesome Icon CSS
+/>
+
+========= Table ============
+
+<Table
+  data={user} // Response Data
+  columns={columns}
+  searching={true}
+  // Only For Server Pagination
+  serverPagination={(pageStart, pageEnd) => {
+    setStart(pageStart);
+    setEnd(pageEnd);
+  }}
+  total={totalUser}
+  // Date Analytic
+  datePicker={(start, end) => {
+    // Pass Redux API Props
+    props.getPurchaseHistory(start, end);
+  }}
+/>
+
+const columns = [
+  // Get Custom Value In Table
+  {
+    Header: "No",
+    width: "20px",
+    Cell: ({ row }) => <span>{parseInt(row.id) + 1}</span>,
+  },
+  // Normal Table
+  { Header: "Name", accessor: "name" },
+  { Header: "Coin", accessor: "coin" },
+  // Add Button And Other Data Show In Table
+  {
+    Header: "Block",
+    accessor: "isBlock",
+    Cell: ({ row }) => (
+      Get Real Value (row.original.{your-value-name})
+      <ToggleSwitch value={row.original.isBlock} />
+    ),
+  },
+];
+
+
+========= Title ============
+<Title name={`User`} // Page Title Name />
+
+
+========= ToggleSwitch ============
+ <ToggleSwitch
+  value={row.original.isActive} // Get Real Value (row.original.{your-value-name})
+  onClick={() => handleClick(row.original._id)} // Toggle Switch
+/>
+
+
+
+======================== Page Wise Components ==============================
+
+=========== DashboardBox =================
+
+{Object.keys(data).map((oldKey) => {
+  const newKey = dashboard[oldKey];
+  const title = data[oldKey].title;
+  const icon = data[oldKey].icon;
+  <DashboardBox 
+    title={title} // Main Title
+    icon={icon}  // Icon Font Awesome Class
+    value={newKey} // 
+  />
+})}
+
+const keyMap = {
+  // Fields    // Title             // Icon
+    : { title: "Total User", icon: "fa-solid fa-users" },
+  liveUser: { title: "Live User", icon: "fa-solid fa-users" },
+};
+
+=========== Setting =================
+
+ <SettingBox
+    submit={handleSubmit} // Submit Button
+    title={`App Setting`} // Box Title Name
+    // If ToggleSwitch
+    toggleSwitch={{
+      switchName: "Is App Active", // Switch Name
+      switchValue: isAppActive, // Switch Value
+      handleClick: () => { // OnClick Functionality
+        handleClick("app");
+      },
+    }}
+  >
+    {... Your Code}
+</SettingBox>
+

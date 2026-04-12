@@ -1,0 +1,91 @@
+[{
+  "_id": {
+    "$oid": "64c7778f737e4650967bfb03"
+  },
+  "discountAmount": 30,
+  "conditions": [
+    "Promo Code may only be used once per person",
+    "\nA discount can be limited to only appear for certain link sources or certain order environments"
+  ],
+  "minOrderValue": 400,
+  "promoCode": "BUY1GET1",
+  "discountType": 1,
+  "createdAt": {
+    "$date": "2023-07-31T08:57:51.467Z"
+  },
+  "updatedAt": {
+    "$date": "2024-09-01T12:01:40.478Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "64c7784e737e4650967bfb43"
+  },
+  "discountAmount": 10,
+  "conditions": [
+    "This is percentage promo"
+  ],
+  "minOrderValue": 200,
+  "promoCode": "EXTRA10",
+  "discountType": 1,
+  "createdAt": {
+    "$date": "2023-07-31T09:01:02.497Z"
+  },
+  "updatedAt": {
+    "$date": "2024-09-01T12:01:21.123Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "64d9b7e0ae719653b6c31829"
+  },
+  "discountAmount": 5,
+  "conditions": [
+    "You can use this promo only one time"
+  ],
+  "minOrderValue": 200,
+  "promoCode": "HOLIDAY50",
+  "discountType": 1,
+  "createdAt": {
+    "$date": "2023-08-14T05:13:04.436Z"
+  },
+  "updatedAt": {
+    "$date": "2024-09-01T12:02:29.438Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "64d9b815ae719653b6c3182b"
+  },
+  "discountAmount": 33,
+  "conditions": [
+    "you can use this promo only one time"
+  ],
+  "minOrderValue": 300,
+  "promoCode": "FALL2024",
+  "discountType": 0,
+  "createdAt": {
+    "$date": "2023-08-14T05:13:57.485Z"
+  },
+  "updatedAt": {
+    "$date": "2024-09-01T12:02:11.678Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "64d9b879ae719653b6c3182d"
+  },
+  "discountAmount": 300,
+  "conditions": [
+    "This promo is only for one time usable and it's minimum value is 2500 dollers"
+  ],
+  "minOrderValue": 2500,
+  "promoCode": "VIPSALE",
+  "discountType": 0,
+  "createdAt": {
+    "$date": "2023-08-14T05:15:37.580Z"
+  },
+  "updatedAt": {
+    "$date": "2024-09-01T12:02:58.430Z"
+  }
+}]
