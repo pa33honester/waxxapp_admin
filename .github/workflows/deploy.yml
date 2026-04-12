@@ -11,50 +11,44 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
 
+      - name: Detect changes
+        id: changes
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            frontend:
+              - 'frontend/**'
+            backend:
+              - 'backend/**'
+            workflow:
+              - '.github/workflows/deploy.yml'
+
+      # ── Frontend ──────────────────────────────────────────────────────────
       - name: Setup Node.js
+        if: steps.changes.outputs.frontend == 'true' || steps.changes.outputs.workflow == 'true'
         uses: actions/setup-node@v4
         with:
           node-version: '18'
           cache: 'npm'
           cache-dependency-path: frontend/package-lock.json
 
-      # ── Frontend ──────────────────────────────────────────────────────────
       - name: Install frontend dependencies
+        if: steps.changes.outputs.frontend == 'true' || steps.changes.outputs.workflow == 'true'
         working-directory: frontend
         run: npm ci
 
       - name: Build frontend
+        if: steps.changes.outputs.frontend == 'true' || steps.changes.outputs.workflow == 'true'
         working-directory: frontend
         run: npm run build
         env:
           NODE_OPTIONS: --max-old-space-size=4096
 
-      # ── Backend ───────────────────────────────────────────────────────────
-      - name: Install backend dependencies (production only)
-        working-directory: backend
-        run: npm ci --omit=dev
-
-      # ── Deploy ────────────────────────────────────────────────────────────
-      # Sync backend source files — preserves config.js, setting.js, .env, and storage/
-      - name: Sync backend source
-        run: |
-          rsync -a --delete \
-            --exclude='node_modules' \
-            --exclude='public' \
-            --exclude='storage' \
-            --exclude='config.js' \
-            --exclude='setting.js' \
-            --exclude='.env' \
-            backend/ ${{ vars.DEPLOY_PATH }}/backend/
-
-      - name: Sync backend node_modules
-        run: |
-          rsync -a --delete \
-            backend/node_modules/ ${{ vars.DEPLOY_PATH }}/backend/node_modules/
-
-      # Deploy frontend build into backend/public (preserves Google verification file)
       - name: Deploy frontend build
+        if: steps.changes.outputs.frontend == 'true' || steps.changes.outputs.workflow == 'true'
         run: |
           GOOGLE_FILE="${{ vars.DEPLOY_PATH }}/backend/public/google571f8db131a7223d.html"
           if [ -f "$GOOGLE_FILE" ]; then
@@ -68,5 +62,30 @@ jobs:
             rm /tmp/google571f8db131a7223d.html
           fi
 
+      # ── Backend ───────────────────────────────────────────────────────────
+      - name: Install backend dependencies (production only)
+        if: steps.changes.outputs.backend == 'true' || steps.changes.outputs.workflow == 'true'
+        working-directory: backend
+        run: npm ci --omit=dev
+
+      - name: Sync backend source
+        if: steps.changes.outputs.backend == 'true' || steps.changes.outputs.workflow == 'true'
+        run: |
+          rsync -a --delete \
+            --exclude='node_modules' \
+            --exclude='public' \
+            --exclude='storage' \
+            --exclude='config.js' \
+            --exclude='setting.js' \
+            --exclude='.env' \
+            backend/ ${{ vars.DEPLOY_PATH }}/backend/
+
+      - name: Sync backend node_modules
+        if: steps.changes.outputs.backend == 'true' || steps.changes.outputs.workflow == 'true'
+        run: |
+          rsync -a --delete \
+            backend/node_modules/ ${{ vars.DEPLOY_PATH }}/backend/node_modules/
+
       - name: Restart PM2
+        if: steps.changes.outputs.backend == 'true' || steps.changes.outputs.workflow == 'true'
         run: pm2 restart waxxapp
