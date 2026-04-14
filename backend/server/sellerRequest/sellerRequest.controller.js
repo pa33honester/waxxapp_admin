@@ -6,6 +6,7 @@ const fs = require("fs");
 //import model
 const User = require("../user/user.model");
 const Seller = require("../seller/seller.model");
+const Notification = require("../notification/notification.model");
 
 //config
 const config = require("../../config");
@@ -15,6 +16,12 @@ const { deleteFile, deleteFiles } = require("../../util/deleteFile");
 
 //private key
 const admin = require("../../util/privateKey");
+
+const getValidToken = (token) => {
+  if (typeof token !== "string") return null;
+  const trimmedToken = token.trim();
+  return trimmedToken.length > 0 ? trimmedToken : null;
+};
 
 //create request by user
 exports.storeRequest = async (req, res) => {
@@ -135,8 +142,8 @@ exports.storeRequest = async (req, res) => {
       const requestPayload = {
         token: user.fcmToken,
         notification: {
-          title: "📝 Seller Request Submitted!",
-          body: "Thanks for applying! 📦 Our team is reviewing your seller request. We’ll notify you once it’s approved. 🔍⏳",
+          title: "Seller Request Submitted",
+          body: "Thanks for applying! Our team is reviewing your seller request. We will notify you once it is approved.",
         },
         data: {
           type: "SELLER_REQUEST_CREATED",
@@ -339,13 +346,26 @@ exports.acceptRequest = async (req, res) => {
       message: "Seller request accepted and become the seller!",
       request: request,
     });
+    const notificationTitle = "Seller Verification Completed";
+    const notificationBody = "Your seller profile is now verified. Start listing your products and grow your business today.";
 
-    if (user.fcmToken !== null) {
+    const notification = new Notification();
+    notification.userId = user?._id || null;
+    notification.sellerId = seller?._id || null;
+    notification.title = notificationTitle;
+    notification.message = notificationBody;
+    notification.notificationType = 4;
+    notification.image = user?.image || "";
+    notification.date = new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" });
+    await notification.save();
+
+    const userToken = getValidToken(user?.fcmToken) || getValidToken(request?.fcmToken);
+    if (userToken) {
       const requestPayload = {
-        token: user.fcmToken,
+        token: userToken,
         notification: {
-          title: "Seller Verification Completed ✔️",
-          body: "Your seller profile is now verified. Start listing your products and grow your business today! 🚀🎯",
+          title: notificationTitle,
+          body: notificationBody,
         },
         data: {
           type: "SELLER_VERIFICATION_APPROVED",

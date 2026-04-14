@@ -6,7 +6,7 @@ const notificationSchema = new mongoose.Schema(
     message: { type: String, trim: true, default: null },
     image: { type: String, default: null },
     date: { type: String, default: null },
-    notificationType: { type: Number, enum: [1, 2, 3] }, // 1.order placed by user 2.order status updated 3.review given by user
+    notificationType: { type: Number, enum: [1, 2, 3, 4, 5, 6] }, // 1.order placed by user 2.order status updated 3.review given by user 4.seller verification approved 5.product create request approved 6.product create request rejected
     userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", default: null },
     sellerId: { type: mongoose.Schema.Types.ObjectId, ref: "Seller", default: null },
     productId: { type: mongoose.Schema.Types.ObjectId, ref: "Product", default: null },

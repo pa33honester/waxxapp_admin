@@ -18,6 +18,7 @@ const Cart = require("../cart/cart.model");
 const Order = require("../order/order.model");
 const Favorite = require("../favorite/favorite.model");
 const Review = require("../review/review.model");
+const Notification = require("../notification/notification.model");
 const LikeHistoryOfReel = require("../likeHistoryOfReel/likeHistoryOfReel.model");
 const Attributes = require("../attributes/attributes.model");
 const AuctionBid = require("../auctionBid/auctionBid.model");
@@ -29,6 +30,7 @@ const { deleteFiles } = require("../../util/deleteFile");
 
 //import config
 const Config = require("../../config");
+const admin = require("../../util/privateKey");
 
 //moment
 const moment = require("moment");
@@ -37,6 +39,76 @@ const Bull = require("bull");
 const manualAuctionQueue = new Bull("manual-auction-queue", {
   redis: { host: "127.0.0.1", port: 6379 },
 });
+
+const getValidToken = (token) => {
+  if (typeof token !== "string") return null;
+  const trimmedToken = token.trim();
+  return trimmedToken.length > 0 ? trimmedToken : null;
+};
+
+const sendCreateRequestDecisionNotification = async ({ product, decision }) => {
+  try {
+    const seller = await Seller.findById(product.seller).select("fcmToken userId").lean();
+    if (!seller) return;
+
+    const tokens = new Set();
+    const sellerToken = getValidToken(seller.fcmToken);
+    if (sellerToken) {
+      tokens.add(sellerToken);
+    }
+
+    if (seller.userId) {
+      const user = await User.findById(seller.userId).select("fcmToken").lean();
+      const userToken = getValidToken(user?.fcmToken);
+      if (userToken) {
+        tokens.add(userToken);
+      }
+    }
+
+    const isApproved = decision === "Approved";
+    const payload = {
+      notification: {
+        title: isApproved ? "Product Request Approved" : "Product Request Rejected",
+        body: isApproved
+          ? "Your product request has been approved and is now live."
+          : "Your product request was rejected. Please review and submit again.",
+      },
+      data: {
+        type: isApproved ? "PRODUCT_CREATE_REQUEST_APPROVED" : "PRODUCT_CREATE_REQUEST_REJECTED",
+      },
+    };
+
+    const notification = new Notification();
+    notification.userId = seller.userId || null;
+    notification.sellerId = seller._id;
+    notification.productId = product._id;
+    notification.title = payload.notification.title;
+    notification.message = payload.notification.body;
+    notification.notificationType = isApproved ? 5 : 6;
+    notification.date = new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" });
+    await notification.save();
+
+    if (!tokens.size) return;
+
+    const adminPromise = await admin;
+    await Promise.all(
+      [...tokens].map((token) =>
+        adminPromise
+          .messaging()
+          .send({
+            token,
+            notification: payload.notification,
+            data: payload.data,
+          })
+          .catch((error) => {
+            console.error("Error sending product create request decision notification:", error);
+          })
+      )
+    );
+  } catch (error) {
+    console.error("Error preparing product create request decision notification:", error);
+  }
+};
 
 //get category , subcategory , attributes
 exports.fetchCatSubcatAttrData = async (req, res) => {
@@ -259,6 +331,8 @@ exports.acceptCreateRequest = async (req, res) => {
         product: product,
       });
 
+      sendCreateRequestDecisionNotification({ product, decision: "Approved" });
+
       if (product.productSaleType === 2 && product.enableAuction && product.auctionEndDate && product.createStatus === "Approved") {
         await manualAuctionQueue.add(
           "closeManualAuction",
@@ -274,11 +348,14 @@ exports.acceptCreateRequest = async (req, res) => {
 
       //await Product.findByIdAndDelete(product._id);
 
-      return res.status(200).json({
+      res.status(200).json({
         status: true,
         message: "Product request rejected by the admin for create the product.",
         product: product,
       });
+
+      sendCreateRequestDecisionNotification({ product, decision: "Rejected" });
+      return;
     } else {
       return res.status(200).json({ status: false, message: "type must be passed valid." });
     }
