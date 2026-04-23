@@ -6,9 +6,17 @@ const checkAccessWithSecretKey = require("../../util/checkAccess");
 
 //controller
 const liveSellerController = require("./liveSeller.controller");
+const scheduledLiveController = require("../scheduledLive/scheduledLive.controller");
 
-//live the seller for live Selling
-route.post("/", checkAccessWithSecretKey(), liveSellerController.liveSeller);
+//live the seller for live Selling (+ notify scheduled-show reminder users after response)
+route.post("/", checkAccessWithSecretKey(), (req, res, next) => {
+  res.on("finish", () => {
+    if (res.statusCode === 200) {
+      scheduledLiveController.notifyScheduledStart(req.body.sellerId).catch(console.error);
+    }
+  });
+  next();
+}, liveSellerController.liveSeller);
 
 //get live seller list
 route.get("/liveSellerList", checkAccessWithSecretKey(), liveSellerController.getliveSellerList);
@@ -27,5 +35,20 @@ route.patch("/setSellerOfflineAndResetProducts", checkAccessWithSecretKey(), liv
 
 //get live summary
 route.patch("/retrieveLiveAnalytics", checkAccessWithSecretKey(), liveSellerController.retrieveLiveAnalytics);
+
+//scheduled live: seller creates a show
+route.post("/schedule", checkAccessWithSecretKey(), scheduledLiveController.schedule);
+
+//scheduled live: get seller's upcoming shows
+route.get("/scheduledBySeller", checkAccessWithSecretKey(), scheduledLiveController.getScheduledBySeller);
+
+//scheduled live: get upcoming shows for a user (from followed sellers)
+route.get("/upcoming", checkAccessWithSecretKey(), scheduledLiveController.getUpcomingForUser);
+
+//scheduled live: user sets a reminder
+route.post("/setReminder", checkAccessWithSecretKey(), scheduledLiveController.setReminder);
+
+//scheduled live: user cancels a reminder
+route.post("/cancelReminder", checkAccessWithSecretKey(), scheduledLiveController.cancelReminder);
 
 module.exports = route;
