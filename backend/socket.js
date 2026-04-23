@@ -665,6 +665,36 @@ io.on("connect", async (socket) => {
     }
   });
 
+  // ----- Giveaways -----
+  // Seller-driven: start / draw. Enter is HTTP-only (buyer-originated volume, dedupe easier there).
+  socket.on("startGiveaway", async (data) => {
+    try {
+      const payload = typeof data === "string" ? JSON.parse(data) : data;
+      const { startGiveawayInternal } = require("./server/giveaway/giveaway.controller");
+      const result = await startGiveawayInternal(payload || {});
+      if (!result.status) {
+        const targetSocket = io.sockets.sockets.get(socket.id);
+        if (targetSocket) targetSocket.emit("giveawayError", { message: result.message });
+      }
+    } catch (error) {
+      console.error("startGiveaway socket error:", error);
+    }
+  });
+
+  socket.on("drawGiveaway", async (data) => {
+    try {
+      const payload = typeof data === "string" ? JSON.parse(data) : data;
+      const { drawGiveawayInternal } = require("./server/giveaway/giveaway.controller");
+      const result = await drawGiveawayInternal(payload || {});
+      if (!result.status) {
+        const targetSocket = io.sockets.sockets.get(socket.id);
+        if (targetSocket) targetSocket.emit("giveawayError", { message: result.message });
+      }
+    } catch (error) {
+      console.error("drawGiveaway socket error:", error);
+    }
+  });
+
   socket.on("disconnect", async (reason) => {
     try {
       console.log("disconnect called: ", id, reason);

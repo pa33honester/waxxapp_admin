@@ -23,6 +23,7 @@ import { bankReducer } from "./bank/bank.reducer";
 import { currencyReducer } from "./currency/currency.reducer";
 import { reportReasonReducer } from "../store/reportReason/reportReason.reducer";
 import { videoReportReducer } from "../store/videoReport/videoReport.reducer";
+import { giveawayReducer } from "./giveaway/giveaway.reducer";
 
 
 export default combineReducers({
@@ -49,7 +50,8 @@ export default combineReducers({
   bank: bankReducer,
   currency: currencyReducer,
   reportReason : reportReasonReducer,
-  videoReport : videoReportReducer
+  videoReport : videoReportReducer,
+  giveaway: giveawayReducer,
 
 
 });

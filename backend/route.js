@@ -132,6 +132,10 @@ app.use("/withdrawRequest", WithdrawRequestRoute);
 const AuctionBidRoute = require("./server/auctionBid/auctionBid.route");
 app.use("/auctionBid", AuctionBidRoute);
 
+//Giveaway Route
+const GiveawayRoute = require("./server/giveaway/giveaway.route");
+app.use("/giveaway", GiveawayRoute);
+
 //Reportreason Route
 const ReportreasonRoute = require("./server/reportReason/reportReason.route");
 app.use("/reportReason", ReportreasonRoute);

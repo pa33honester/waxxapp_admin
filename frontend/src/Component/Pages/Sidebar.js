@@ -173,6 +173,12 @@ const Sidebar = () => {
       onClick: handleCloseSideBar,
     },
     {
+      name: "Giveaways",
+      path: "/admin/giveaway",
+      iconName: "Gift",
+      onClick: handleCloseSideBar,
+    },
+    {
       name: "Order",
       path: "/admin/order",
       path2: "/admin/order/orderDetail",

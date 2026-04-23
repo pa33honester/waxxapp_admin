@@ -86,6 +86,7 @@ require("./socket");
 //auctionWorker
 require("./workers/auctionWorker");
 require("./workers/manualAuctionWorker");
+require("./workers/giveawayWorker");
 
 //mongoose connection
 const db = mongoose.connection;

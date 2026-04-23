@@ -61,6 +61,7 @@ import ReportReason from "../Table/reportReason/ReportReason";
 import { Video } from "lucide-react";
 import VideoReport from "../Table/videoReport/VideoReport";
 import Others from "../Table/other/Others";
+import Giveaway from "../Table/giveaway/Giveaway";
 
 export const token = sessionStorage.getItem("token");
 
@@ -233,6 +234,9 @@ const Admin = ({ isAuthenticated }) => {
               {/* fake reels */}
 
               <Route path="/fakeReels" element={<FakeReels />} />
+
+              {/* giveaway */}
+              <Route path="/giveaway" element={<Giveaway />} />
             </Routes>
           </div>
         </div>

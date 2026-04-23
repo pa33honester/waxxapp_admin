@@ -1,0 +1,2 @@
+export const GET_GIVEAWAYS = "GET_GIVEAWAYS";
+export const CANCEL_GIVEAWAY = "CANCEL_GIVEAWAY";
