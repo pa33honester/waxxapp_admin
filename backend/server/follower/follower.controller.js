@@ -67,6 +67,20 @@ exports.followUnfollow = async (req, res) => {
 
       await Promise.all([follower.save(), userId.updateOne({ $inc: { following: 1 } }), sellerId.updateOne({ $inc: { followers: 1 } })]);
 
+      // Whatnot-style: surface new follows as a system message in the live
+      // chat when the followed seller is currently broadcasting.
+      if (sellerId.isLive && sellerId.liveSellingHistoryId) {
+        try {
+          const { emitLiveSystemMessage } = require("../../util/liveSystemMessage");
+          emitLiveSystemMessage({
+            liveSellingHistoryId: sellerId.liveSellingHistoryId,
+            systemType: "FOLLOW",
+            userName: `${userId.firstName || ""} ${userId.lastName || ""}`.trim() || userId.userName || "",
+            text: "started following",
+          });
+        } catch (_) {}
+      }
+
       //notification related
       if (!sellerId.isBlock && sellerId.fcmToken !== null) {
         const payload = {

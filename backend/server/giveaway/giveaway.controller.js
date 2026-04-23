@@ -260,6 +260,16 @@ async function drawGiveawayInternal({ giveawayId }) {
     orderId: order._id,
   });
 
+  try {
+    const { emitLiveSystemMessage } = require("../../util/liveSystemMessage");
+    emitLiveSystemMessage({
+      liveSellingHistoryId: giveaway.liveSellingHistoryId,
+      systemType: "GIVEAWAY_WIN",
+      userName: `${winner.firstName || ""} ${winner.lastName || ""}`.trim(),
+      text: `won the giveaway: ${product.productName || ""}`,
+    });
+  } catch (_) {}
+
   if (global.io) {
     global.io.to("liveRoom:" + winner._id.toString()).emit("giveawayPrizeClaim", {
       giveawayId: giveaway._id,

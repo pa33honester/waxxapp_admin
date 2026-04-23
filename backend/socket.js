@@ -14,6 +14,9 @@ const mongoose = require("mongoose");
 //private key
 const admin = require("./util/privateKey");
 
+// Whatnot-style system messages (SOLD / BID / GIVEAWAY_WIN / FOLLOW) in live chat
+const { emitLiveSystemMessage } = require("./util/liveSystemMessage");
+
 io.on("connect", async (socket) => {
   console.log("Socket Connection done: ", socket.id);
   console.log("socket.handshake.query: ", socket.handshake.query);
@@ -388,6 +391,19 @@ io.on("connect", async (socket) => {
 
       io.in("liveSellerRoom:" + liveHistoryId).emit("announceTopBidPlaced", data);
 
+      try {
+        const bidder = await User.findById(userId).select("firstName lastName userName").lean();
+        const displayName = bidder ? `${bidder.firstName || ""} ${bidder.lastName || ""}`.trim() || bidder.userName || "" : "";
+        emitLiveSystemMessage({
+          liveSellingHistoryId: liveHistoryId,
+          systemType: "BID",
+          userName: displayName,
+          text: `bid ${amount}`,
+        });
+      } catch (e) {
+        console.warn("BID system message emit failed:", e.message);
+      }
+
       const endTime = new Date(Date.now() + minAuctionTime * 1000);
       const product = liveStreamer.selectedProducts.find((p) => p.productId.toString() === productId.toString());
       product.auctionEndTime = endTime;
@@ -552,6 +568,13 @@ io.on("connect", async (socket) => {
         firstName: winner.firstName || "",
         lastName: winner.lastName || "",
         image: winner.image || "",
+      });
+
+      emitLiveSystemMessage({
+        liveSellingHistoryId: liveHistoryId,
+        systemType: "SOLD",
+        userName: `${winner.firstName || ""} ${winner.lastName || ""}`.trim(),
+        text: `won ${product?.productName || "auction"} for ${highestBid.currentBid}`,
       });
 
       const itemId = order.items[0]._id; // Only one item in auction orders
