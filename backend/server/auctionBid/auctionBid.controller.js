@@ -1,5 +1,6 @@
 const AuctionBid = require("../auctionBid/auctionBid.model");
 const Product = require("../product/product.model");
+const { triggerAutoBid } = require("../autoBid/autoBid.controller");
 
 const moment = require("moment");
 const mongoose = require("mongoose");
@@ -15,7 +16,7 @@ exports.placeManualBid = async (req, res) => {
     }
 
     const [product, currentBid] = await Promise.all([
-      Product.findById(productId).select("productSaleType enableAuction seller scheduleTime auctionDuration auctionStartingPrice auctionStartDate auctionEndDate").lean(),
+      Product.findById(productId).select("productSaleType enableAuction seller scheduleTime auctionDuration auctionStartingPrice auctionStartDate auctionEndDate productName mainImage").lean(),
       AuctionBid.findOne({ productId, mode: 2 }).sort({ currentBid: -1 }).lean(),
     ]);
 
@@ -65,6 +66,16 @@ exports.placeManualBid = async (req, res) => {
       attributes,
       mode: 2,
     });
+
+    // Fire-and-forget: trigger auto-bids and outbid notifications
+    triggerAutoBid({
+      productId,
+      currentBid: bid,
+      currentBidderId: userId,
+      sellerId: product.seller || null,
+      startingBid,
+      productName: product.productName || "",
+    }).catch(console.error);
 
     return res.status(200).json({ status: true, message: "Bid placed successfully", bid: newBid });
   } catch (error) {
