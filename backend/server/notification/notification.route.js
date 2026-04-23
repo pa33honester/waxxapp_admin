@@ -22,4 +22,7 @@ route.post("/send", checkAccessWithSecretKey(), upload.single("image"), Notifica
 //Send notification to particular seller
 route.post("/particularSeller", checkAccessWithSecretKey(), upload.single("image"), NotificationController.particularSellerNotification);
 
+//Send "product liked" notification from user to product's seller
+route.post("/sendProductLikedNotification", checkAccessWithSecretKey(), NotificationController.sendProductLikedNotification);
+
 module.exports = route;
