@@ -136,6 +136,10 @@ app.use("/auctionBid", AuctionBidRoute);
 const GiveawayRoute = require("./server/giveaway/giveaway.route");
 app.use("/giveaway", GiveawayRoute);
 
+//Offer Route (buyer→seller offers on static listings)
+const OfferRoute = require("./server/offer/offer.route");
+app.use("/offer", OfferRoute);
+
 //Reportreason Route
 const ReportreasonRoute = require("./server/reportReason/reportReason.route");
 app.use("/reportReason", ReportreasonRoute);
