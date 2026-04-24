@@ -38,6 +38,9 @@ route.patch("/update", checkAccessWithSecretKey(), upload.single("image"), selle
 //seller request accept or not by admin
 route.patch("/acceptOrNot", checkAccessWithSecretKey(), sellerRequestController.acceptRequest);
 
+//seller request reject by admin
+route.patch("/reject", checkAccessWithSecretKey(), sellerRequestController.rejectRequest);
+
 //get the all request for admin panel
 route.get("/", checkAccessWithSecretKey(), sellerRequestController.getRequest);
 

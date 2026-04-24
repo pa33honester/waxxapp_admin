@@ -32,6 +32,9 @@ const { deleteFiles } = require("../../util/deleteFile");
 const Config = require("../../config");
 const admin = require("../../util/privateKey");
 
+//email
+const { sendTransactionalEmail, templates } = require("../../util/emailSender");
+
 //moment
 const moment = require("moment");
 
@@ -46,68 +49,80 @@ const getValidToken = (token) => {
   return trimmedToken.length > 0 ? trimmedToken : null;
 };
 
-const sendCreateRequestDecisionNotification = async ({ product, decision }) => {
+const sendCreateRequestDecisionNotification = async ({ product, decision, reason }) => {
+  const deliveries = { push: "no_token", email: "no_email" };
   try {
-    const seller = await Seller.findById(product.seller).select("fcmToken userId").lean();
-    if (!seller) return;
+    const seller = await Seller.findById(product.seller).select("fcmToken userId firstName email").lean();
+    if (!seller) return deliveries;
 
     const tokens = new Set();
     const sellerToken = getValidToken(seller.fcmToken);
-    if (sellerToken) {
-      tokens.add(sellerToken);
-    }
+    if (sellerToken) tokens.add(sellerToken);
 
+    // Also send to the owning User so if the seller app is uninstalled but the
+    // buyer app isn't, the message still lands.
+    let owningUser = null;
     if (seller.userId) {
-      const user = await User.findById(seller.userId).select("fcmToken").lean();
-      const userToken = getValidToken(user?.fcmToken);
-      if (userToken) {
-        tokens.add(userToken);
-      }
+      owningUser = await User.findById(seller.userId).select("fcmToken email firstName").lean();
+      const userToken = getValidToken(owningUser?.fcmToken);
+      if (userToken) tokens.add(userToken);
     }
 
     const isApproved = decision === "Approved";
-    const payload = {
-      notification: {
-        title: isApproved ? "Product Request Approved" : "Product Request Rejected",
-        body: isApproved
-          ? "Your product request has been approved and is now live."
-          : "Your product request was rejected. Please review and submit again.",
-      },
-      data: {
-        type: isApproved ? "PRODUCT_CREATE_REQUEST_APPROVED" : "PRODUCT_CREATE_REQUEST_REJECTED",
-      },
-    };
+    const title = isApproved ? "Product Request Approved" : "Product Request Rejected";
+    const body = isApproved
+      ? "Your product request has been approved and is now live."
+      : reason
+        ? `Your product was rejected. Reason: ${reason}`
+        : "Your product request was rejected. Please review and submit again.";
 
     const notification = new Notification();
     notification.userId = seller.userId || null;
     notification.sellerId = seller._id;
     notification.productId = product._id;
-    notification.title = payload.notification.title;
-    notification.message = payload.notification.body;
+    notification.title = title;
+    notification.message = body;
     notification.notificationType = isApproved ? 5 : 6;
     notification.date = new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" });
     await notification.save();
 
-    if (!tokens.size) return;
-
-    const adminPromise = await admin;
-    await Promise.all(
-      [...tokens].map((token) =>
-        adminPromise
-          .messaging()
-          .send({
+    if (tokens.size) {
+      const adminPromise = await admin;
+      const results = await Promise.allSettled(
+        [...tokens].map((token) =>
+          adminPromise.messaging().send({
             token,
-            notification: payload.notification,
-            data: payload.data,
+            notification: { title, body },
+            data: {
+              type: isApproved ? "PRODUCT_CREATE_REQUEST_APPROVED" : "PRODUCT_CREATE_REQUEST_REJECTED",
+              productId: product._id.toString(),
+              reason: reason || "",
+            },
           })
-          .catch((error) => {
-            console.error("Error sending product create request decision notification:", error);
-          })
-      )
-    );
+        )
+      );
+      const anyOk = results.some((r) => r.status === "fulfilled");
+      const anyFail = results.some((r) => r.status === "rejected");
+      if (anyFail) results.filter((r) => r.status === "rejected").forEach((r) => console.error("Product decision push failed:", r.reason));
+      deliveries.push = anyOk ? "sent" : "failed";
+    }
+
+    const recipientEmail = (seller.email || owningUser?.email || "").trim();
+    if (recipientEmail) {
+      const firstName = seller.firstName || owningUser?.firstName;
+      const result = await sendTransactionalEmail({
+        to: recipientEmail,
+        subject: isApproved ? "Your product is live" : "Your product wasn't approved",
+        html: isApproved
+          ? templates.productApproved({ firstName, productName: product.productName })
+          : templates.productRejected({ firstName, productName: product.productName, reason }),
+      });
+      deliveries.email = result.ok ? "sent" : result.reason || "failed";
+    }
   } catch (error) {
     console.error("Error preparing product create request decision notification:", error);
   }
+  return deliveries;
 };
 
 //get category , subcategory , attributes
@@ -325,13 +340,7 @@ exports.acceptCreateRequest = async (req, res) => {
       product.createStatus = "Approved";
       await product.save();
 
-      res.status(200).json({
-        status: true,
-        message: "Product request accepted by the admin.",
-        product: product,
-      });
-
-      sendCreateRequestDecisionNotification({ product, decision: "Approved" });
+      const deliveries = await sendCreateRequestDecisionNotification({ product, decision: "Approved" });
 
       if (product.productSaleType === 2 && product.enableAuction && product.auctionEndDate && product.createStatus === "Approved") {
         await manualAuctionQueue.add(
@@ -342,20 +351,26 @@ exports.acceptCreateRequest = async (req, res) => {
           }
         );
       }
+
+      return res.status(200).json({
+        status: true,
+        message: "Product request accepted by the admin.",
+        product,
+        deliveries,
+      });
     } else if (req.query.type === "Rejected") {
       product.createStatus = "Rejected";
       await product.save();
 
-      //await Product.findByIdAndDelete(product._id);
+      const reason = (req.body && req.body.rejectionReason) ? String(req.body.rejectionReason).trim() : "";
+      const deliveries = await sendCreateRequestDecisionNotification({ product, decision: "Rejected", reason });
 
-      res.status(200).json({
+      return res.status(200).json({
         status: true,
         message: "Product request rejected by the admin for create the product.",
-        product: product,
+        product,
+        deliveries,
       });
-
-      sendCreateRequestDecisionNotification({ product, decision: "Rejected" });
-      return;
     } else {
       return res.status(200).json({ status: false, message: "type must be passed valid." });
     }

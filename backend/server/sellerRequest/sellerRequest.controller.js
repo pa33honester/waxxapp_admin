@@ -17,6 +17,9 @@ const { deleteFile, deleteFiles } = require("../../util/deleteFile");
 //private key
 const admin = require("../../util/privateKey");
 
+//email
+const { sendTransactionalEmail, templates } = require("../../util/emailSender");
+
 const getValidToken = (token) => {
   if (typeof token !== "string") return null;
   const trimmedToken = token.trim();
@@ -341,11 +344,6 @@ exports.acceptRequest = async (req, res) => {
 
     await Promise.all([request.save(), user.save(), seller.save()]);
 
-    res.status(200).json({
-      status: true,
-      message: "Seller request accepted and become the seller!",
-      request: request,
-    });
     const notificationTitle = "Seller Verification Completed";
     const notificationBody = "Your seller profile is now verified. Start listing your products and grow your business today.";
 
@@ -359,27 +357,127 @@ exports.acceptRequest = async (req, res) => {
     notification.date = new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" });
     await notification.save();
 
+    // Push — fallback to the original request's fcmToken if the user's own
+    // has gone stale since applying.
+    let pushStatus = "no_token";
     const userToken = getValidToken(user?.fcmToken) || getValidToken(request?.fcmToken);
     if (userToken) {
-      const requestPayload = {
-        token: userToken,
-        notification: {
-          title: notificationTitle,
-          body: notificationBody,
-        },
-        data: {
-          type: "SELLER_VERIFICATION_APPROVED",
-        },
-      };
-
       try {
         const adminPromise = await admin;
-        const response = await adminPromise.messaging().send(requestPayload);
-        console.log("Successfully sent notification: ", response);
+        await adminPromise.messaging().send({
+          token: userToken,
+          notification: { title: notificationTitle, body: notificationBody },
+          data: { type: "SELLER_VERIFICATION_APPROVED" },
+        });
+        pushStatus = "sent";
       } catch (error) {
-        console.error("Error sending notification: ", error);
+        console.error("Error sending seller-approved push:", error);
+        pushStatus = "failed";
       }
     }
+
+    // Email — reliable fallback when push tokens are stale (common between
+    // application and approval, since users often reinstall the app).
+    let emailStatus = "no_email";
+    const recipientEmail = (user?.email || request?.email || "").trim();
+    if (recipientEmail) {
+      const result = await sendTransactionalEmail({
+        to: recipientEmail,
+        subject: "You're a verified seller",
+        html: templates.sellerApproved({ firstName: user?.firstName || request?.firstName }),
+      });
+      emailStatus = result.ok ? "sent" : result.reason || "failed";
+    }
+
+    return res.status(200).json({
+      status: true,
+      message: "Seller request accepted and become the seller!",
+      request,
+      deliveries: { push: pushStatus, email: emailStatus },
+    });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({ status: false, message: error.message || "Internal Server Error" });
+  }
+};
+
+// Admin rejects a seller request. Writes an in-app notification, fires a push,
+// and sends an explanatory email. The request row is flagged rejected (not
+// deleted) so the admin has an audit trail.
+exports.rejectRequest = async (req, res) => {
+  try {
+    const requestId = req.query.requestId || req.body.requestId;
+    const reason = (req.body.rejectionReason || "").trim();
+
+    if (!requestId) {
+      return res.status(200).json({ status: false, message: "requestId is required." });
+    }
+
+    const request = await Request.findById(requestId);
+    if (!request) {
+      return res.status(200).json({ status: false, message: "Seller request not found." });
+    }
+
+    if (request.isAccepted) {
+      return res.status(200).json({ status: false, message: "This request was already approved — cannot reject." });
+    }
+
+    if (request.isRejected) {
+      return res.status(200).json({ status: false, message: "This request was already rejected." });
+    }
+
+    request.isRejected = true;
+    request.rejectionReason = reason || null;
+    await request.save();
+
+    const user = request.userId ? await User.findById(request.userId) : null;
+
+    const title = "Seller Application Rejected";
+    const body = reason
+      ? `Your seller application was rejected. Reason: ${reason}`
+      : "Your seller application was rejected. You can update your details and reapply.";
+
+    const notification = new Notification();
+    notification.userId = user?._id || request.userId || null;
+    notification.title = title;
+    notification.message = body;
+    notification.date = new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" });
+    await notification.save();
+
+    let pushStatus = "no_token";
+    const userToken = getValidToken(user?.fcmToken) || getValidToken(request?.fcmToken);
+    if (userToken) {
+      try {
+        const adminPromise = await admin;
+        await adminPromise.messaging().send({
+          token: userToken,
+          notification: { title, body },
+          data: { type: "SELLER_VERIFICATION_REJECTED", reason: reason || "" },
+        });
+        pushStatus = "sent";
+      } catch (error) {
+        console.error("Error sending seller-rejected push:", error);
+        pushStatus = "failed";
+      }
+    }
+
+    let emailStatus = "no_email";
+    const recipientEmail = (user?.email || request?.email || "").trim();
+    if (recipientEmail) {
+      const result = await sendTransactionalEmail({
+        to: recipientEmail,
+        subject: "Your seller application wasn't approved",
+        html: templates.sellerRejected({ firstName: user?.firstName || request?.firstName, reason }),
+      });
+      emailStatus = result.ok ? "sent" : result.reason || "failed";
+    }
+
+    return res.status(200).json({
+      status: true,
+      message: "Seller request rejected.",
+      request,
+      deliveries: { push: pushStatus, email: emailStatus },
+    });
   } catch (error) {
     console.log(error);
     return res.status(500).json({ status: false, message: error.message || "Internal Server Error" });
@@ -393,8 +491,8 @@ exports.getRequest = async (req, res) => {
     const limit = req.query.limit ? parseInt(req.query.limit) : 10;
 
     const [totalrequest, request] = await Promise.all([
-      Request.find({ isAccepted: false }).countDocuments(),
-      Request.find({ isAccepted: false })
+      Request.find({ isAccepted: false, isRejected: { $ne: true } }).countDocuments(),
+      Request.find({ isAccepted: false, isRejected: { $ne: true } })
         .sort({ createdAt: -1 })
         .skip((start - 1) * limit)
         .limit(limit),

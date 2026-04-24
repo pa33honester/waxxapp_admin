@@ -45,6 +45,8 @@ const sellerRequestSchema = new mongoose.Schema(
     },
 
     isAccepted: { type: Boolean, default: false },
+    isRejected: { type: Boolean, default: false },
+    rejectionReason: { type: String, default: null },
     userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", default: null },
   },
   {
