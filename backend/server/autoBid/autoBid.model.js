@@ -7,6 +7,9 @@ const autoBidSchema = new mongoose.Schema(
     productId: { type: mongoose.Schema.Types.ObjectId, ref: "Product", required: true },
     maxBidAmount: { type: Number, required: true },
     currentBid: { type: Number, default: 0 }, // last bid placed on behalf of user
+    // Set on the LiveSeller side so live-auction counters can be scoped per
+    // show — null for manual auctions.
+    liveHistoryId: { type: mongoose.Schema.Types.ObjectId, ref: "LiveSellingHistory", default: null },
     attributes: { type: Array, default: [] },
     isActive: { type: Boolean, default: true },
   },

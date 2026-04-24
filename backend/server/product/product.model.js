@@ -15,6 +15,9 @@ const productSchema = new mongoose.Schema(
     enableAuction: { type: Boolean, default: false },
     scheduleTime: { type: Date, default: null }, //for auction
     auctionStartingPrice: { type: Number, default: 0 },
+    // Step between consecutive bids — used by proxy/auto-bid counters and by
+    // the client's quick-bid "BID $next" button.
+    bidIncrement: { type: Number, default: 5 },
     enableReservePrice: { type: Boolean, default: false },
     reservePrice: { type: Number, default: 0 }, //if that price offer bid get then product sold
     auctionDuration: { type: Number, default: 0 }, //in days

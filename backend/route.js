@@ -144,6 +144,10 @@ app.use("/offer", OfferRoute);
 const SearchRoute = require("./server/search/search.route");
 app.use("/search", SearchRoute);
 
+//AutoBid Route (proxy / max-bid)
+const AutoBidRoute = require("./server/autoBid/autoBid.route");
+app.use("/autoBid", AutoBidRoute);
+
 //Reportreason Route
 const ReportreasonRoute = require("./server/reportReason/reportReason.route");
 app.use("/reportReason", ReportreasonRoute);

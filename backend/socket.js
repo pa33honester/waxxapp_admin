@@ -17,6 +17,9 @@ const admin = require("./util/privateKey");
 // Whatnot-style system messages (SOLD / BID / GIVEAWAY_WIN / FOLLOW) in live chat
 const { emitLiveSystemMessage } = require("./util/liveSystemMessage");
 
+// Proxy / auto-bid engine — server-side counter bidding.
+const { triggerAutoBid } = require("./server/autoBid/autoBid.controller");
+
 io.on("connect", async (socket) => {
   console.log("Socket Connection done: ", socket.id);
   console.log("socket.handshake.query: ", socket.handshake.query);
@@ -416,10 +419,26 @@ io.on("connect", async (socket) => {
           productId,
           currentBid: amount,
           liveHistoryId,
+          mode: 1, // live auction
         }),
       ]);
 
       console.log("Bid saved successfully");
+
+      // Let the proxy-bid engine see this bid so any other viewer with an
+      // active auto-bid can counter. Fire-and-forget so broadcasts don't
+      // block on it; per-product lock inside the engine serialises calls.
+      setImmediate(() => {
+        triggerAutoBid({
+          productId,
+          currentBid: Number(amount),
+          currentBidderId: userId,
+          sellerId: productVendorId,
+          startingBid: 0,
+          productName: "",
+          liveHistoryId,
+        }).catch(console.error);
+      });
     } catch (error) {
       console.error("placeBid error:", error);
     }
