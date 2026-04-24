@@ -5,6 +5,7 @@ const initialState = {
   user: [],
   totalUser: 0,
   totalOrder : 0,
+  userProducts: [],
 };
 
 export const userReducer = (state = initialState, action) => {
@@ -34,6 +35,11 @@ export const userReducer = (state = initialState, action) => {
         ...state,
         user: state.user.filter((u) => u._id !== action.payload),
         totalUser: Math.max(0, (state.totalUser || 0) - 1),
+      };
+    case ActionType.GET_USER_PRODUCTS:
+      return {
+        ...state,
+        userProducts: action.payload,
       };
       case ActionType.GET_USER_ORDER:
       

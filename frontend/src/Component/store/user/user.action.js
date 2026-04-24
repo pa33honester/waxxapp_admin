@@ -72,6 +72,19 @@ export const deleteUser = (userId) => (dispatch) => {
 };
 
 
+export const getUserProducts = (sellerId) => (dispatch) => {
+  apiInstanceFetch
+    .get(`product/getSellerWise?sellerId=${sellerId}`)
+    .then((res) => {
+      dispatch({
+        type: ActionType.GET_USER_PRODUCTS,
+        payload: res.product || [],
+      });
+    })
+    .catch((error) => console.error(error));
+};
+
+
 export const getUserOrder = (userId,start,limit, status) => (dispatch) => {
   
   apiInstanceFetch

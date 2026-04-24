@@ -2,6 +2,7 @@ import {
   getUserProfile,
   userIsBlock,
   getUserOrder,
+  getUserProducts,
 } from "../../store/user/user.action";
 import { connect, useDispatch, useSelector } from "react-redux";
 import { useEffect, useState } from "react";
@@ -9,7 +10,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { getDefaultCurrency } from "../../store/currency/currency.action";
 
 const UserProfile = (props) => {
-  const { userProfile, order, totalOrder } = useSelector((state) => state.user);
+  const { userProfile, order, totalOrder, userProducts } = useSelector((state) => state.user);
   const { defaultCurrency } = useSelector((state) => state.currency);
   const { state } = useLocation();
   const navigate = useNavigate();
@@ -20,6 +21,7 @@ const UserProfile = (props) => {
   const [currentPage, setCurrentPage] = useState(1);
   const [status, setStatus] = useState("All");
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState("orders");
 
   useEffect(() => {
     dispatch(getUserProfile(state));
@@ -29,6 +31,12 @@ const UserProfile = (props) => {
   useEffect(() => {
     dispatch(getUserOrder(state, currentPage, size, status));
   }, [dispatch, state, currentPage, size, status]);
+
+  useEffect(() => {
+    if (userProfile?.isSeller && userProfile?.seller) {
+      dispatch(getUserProducts(userProfile.seller));
+    }
+  }, [dispatch, userProfile?.isSeller, userProfile?.seller]);
 
   useEffect(() => {
     setData(order);
@@ -200,64 +208,98 @@ const UserProfile = (props) => {
           </div>
         </div>
 
-        {/* Order Table */}
+        {/* Order / Products Table */}
         <div className="col-xl-9 col-md-12">
           <div className="card shadow-md" style={{ borderRadius: "5px" }}>
             <div className="card-header bg-white">
               <div className="d-flex justify-content-between align-items-center">
-                <h5>Order Details</h5>
-                <div className="col-auto position-relative">
-                  <div className="dropdown">
+                <div className="d-flex align-items-center gap-2">
+                  <button
+                    type="button"
+                    className="btn"
+                    onClick={() => setActiveTab("orders")}
+                    style={{
+                      borderRadius: "5px",
+                      padding: "6px 20px",
+                      background: activeTab === "orders" ? "#b93160" : "transparent",
+                      color: activeTab === "orders" ? "#fff" : "#333",
+                      border: activeTab === "orders" ? "1px solid #b93160" : "1px solid #ddd",
+                      fontWeight: 500,
+                    }}
+                  >
+                    Orders
+                  </button>
+                  {userProfile?.isSeller && userProfile?.seller && (
                     <button
                       type="button"
-                      className="btn btnnewPrime dropdown-toggle"
-                      aria-expanded="false"
-                      onClick={() => setDropdownOpen(!dropdownOpen)}
-                      style={{ borderRadius: "5px", padding: "8px 40px", background: "#fff", marginLeft: "15px" }}
+                      className="btn"
+                      onClick={() => setActiveTab("products")}
+                      style={{
+                        borderRadius: "5px",
+                        padding: "6px 20px",
+                        background: activeTab === "products" ? "#b93160" : "transparent",
+                        color: activeTab === "products" ? "#fff" : "#333",
+                        border: activeTab === "products" ? "1px solid #b93160" : "1px solid #ddd",
+                        fontWeight: 500,
+                      }}
                     >
-                      <span className="text-dark">{status || "Status"}</span>
+                      Products ({userProducts?.length || 0})
                     </button>
-                    {dropdownOpen && (
-                      <ul
-                        className="dropdown-menu show"
-                        style={{
-                          display: "block",
-                          position: "absolute",
-                          top: "100%",
-                          zIndex: 1000,
-                        }}
-                      >
-                        {[
-                          "Pending",
-                          "Confirmed",
-                          "Out Of Delivery",
-                          "Delivered",
-                          "Cancelled",
-                          "All",
-                        ].map((statusOption) => (
-                          <li key={statusOption} style={{ cursor: "pointer", padding: "0px 5px" }}>
-                            <button
-                              className="dropdown-item"
-                              onClick={() => {
-                                setStatus(statusOption);
-                                setDropdownOpen(false);
-                              }}
-                            >
-                              {statusOption}
-                            </button>
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-                  </div>
+                  )}
                 </div>
-
+                {activeTab === "orders" && (
+                  <div className="col-auto position-relative">
+                    <div className="dropdown">
+                      <button
+                        type="button"
+                        className="btn btnnewPrime dropdown-toggle"
+                        aria-expanded="false"
+                        onClick={() => setDropdownOpen(!dropdownOpen)}
+                        style={{ borderRadius: "5px", padding: "8px 40px", background: "#fff", marginLeft: "15px" }}
+                      >
+                        <span className="text-dark">{status || "Status"}</span>
+                      </button>
+                      {dropdownOpen && (
+                        <ul
+                          className="dropdown-menu show"
+                          style={{
+                            display: "block",
+                            position: "absolute",
+                            top: "100%",
+                            zIndex: 1000,
+                          }}
+                        >
+                          {[
+                            "Pending",
+                            "Confirmed",
+                            "Out Of Delivery",
+                            "Delivered",
+                            "Cancelled",
+                            "All",
+                          ].map((statusOption) => (
+                            <li key={statusOption} style={{ cursor: "pointer", padding: "0px 5px" }}>
+                              <button
+                                className="dropdown-item"
+                                onClick={() => {
+                                  setStatus(statusOption);
+                                  setDropdownOpen(false);
+                                }}
+                              >
+                                {statusOption}
+                              </button>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 
             <div
               className="card-body p-0"
-              style={{ overflowY: "auto", minHeight: "480px" }}
+              style={{ overflowY: "auto", minHeight: "480px", display: activeTab === "orders" ? "block" : "none" }}
             >
               <table className="table table-hover table-striped">
                 <thead className="sticky-top bg-light" style={{ zIndex: 1 }}>
@@ -356,6 +398,76 @@ const UserProfile = (props) => {
                 </tbody>
               </table>
             </div>
+
+            <div
+              className="card-body p-0"
+              style={{ overflowY: "auto", minHeight: "480px", display: activeTab === "products" ? "block" : "none" }}
+            >
+              <table className="table table-hover table-striped">
+                <thead className="sticky-top bg-light" style={{ zIndex: 1 }}>
+                  <tr>
+                    <th>No</th>
+                    <th>Product</th>
+                    <th>Category</th>
+                    <th>Price ({defaultCurrency?.symbol})</th>
+                    <th>Stock</th>
+                    <th>Sold</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody className="bg-light">
+                  {userProducts?.length > 0 ? (
+                    userProducts.map((product, index) => (
+                      <tr key={product._id}>
+                        <td className="align-middle">{index + 1}</td>
+                        <td className="align-middle d-flex align-items-center gap-2">
+                          <img
+                            src={product.mainImage}
+                            width={45}
+                            height={45}
+                            alt="Product"
+                            style={{ borderRadius: "8px", objectFit: "cover" }}
+                            onError={(e) => {
+                              e.target.onerror = null;
+                              e.target.src = "/dummy.png";
+                            }}
+                          />
+                          <span>{product.productName}</span>
+                        </td>
+                        <td className="align-middle">{product.category?.name || "-"}</td>
+                        <td className="align-middle">
+                          {defaultCurrency?.symbol}{product.price ?? "-"}
+                        </td>
+                        <td className="align-middle">{product.stock ?? "-"}</td>
+                        <td className="align-middle">{product.sold ?? 0}</td>
+                        <td className="align-middle">
+                          <span
+                            className={`badge p-2 ${product.isOutOfStock
+                              ? "badge-danger"
+                              : product.isApprove
+                                ? "badge-success"
+                                : "badge-warning"
+                              }`}
+                          >
+                            {product.isOutOfStock
+                              ? "Out of stock"
+                              : product.isApprove
+                                ? "Active"
+                                : "Pending"}
+                          </span>
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan="7" className="text-center">
+                        This user has no products.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       </div>
@@ -363,4 +475,4 @@ const UserProfile = (props) => {
   );
 };
 
-export default connect(null, { getUserProfile, userIsBlock, getUserOrder })(UserProfile);
+export default connect(null, { getUserProfile, userIsBlock, getUserOrder, getUserProducts })(UserProfile);
