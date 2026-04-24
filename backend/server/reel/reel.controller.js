@@ -6,6 +6,7 @@ const Product = require("../product/product.model");
 const User = require("../user/user.model");
 const LikeHistoryOfReel = require("../likeHistoryOfReel/likeHistoryOfReel.model");
 const ReportReel = require("../reportoReel/reportoReel.model");
+const Notification = require("../notification/notification.model");
 
 //fs
 const fs = require("fs");
@@ -15,6 +16,9 @@ const config = require("../../config");
 
 //deleteFiles
 const { deleteFiles } = require("../../util/deleteFile");
+
+//firebase admin (FCM)
+const admin = require("../../util/privateKey");
 
 //mongoose
 const mongoose = require("mongoose");
@@ -707,11 +711,48 @@ exports.likeOrDislikeOfReel = async (req, res) => {
 
       await Promise.all([likeHistoryOfReel.save(), reel.updateOne({ $inc: { like: 1 } })]);
 
-      return res.status(200).json({
+      res.status(200).json({
         status: true,
         message: "finally, reel like done by the user!",
         isLike: true,
       });
+
+      // Fire-and-forget seller notification. The HTTP response is already
+      // sent so the buyer's like button is never blocked on FCM latency.
+      (async () => {
+        try {
+          if (!reel.sellerId) return;
+          const seller = await Seller.findById(reel.sellerId).select("fcmToken isBlock").lean();
+          if (!seller || seller.isBlock) return;
+
+          const likerName = `${user.firstName || ""} ${user.lastName || ""}`.trim() || user.userName || "Someone";
+
+          const notif = new Notification();
+          notif.userId = user._id;
+          notif.sellerId = reel.sellerId;
+          notif.title = `${likerName} liked your video`;
+          notif.message = "";
+          notif.date = new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" });
+          await notif.save();
+
+          if (seller.fcmToken) {
+            const adminPromise = await admin;
+            await adminPromise.messaging().send({
+              token: seller.fcmToken,
+              notification: { title: `${likerName} liked your video` },
+              data: {
+                type: "REEL_LIKED",
+                reelId: reel._id.toString(),
+                userId: user._id.toString(),
+              },
+            });
+          }
+        } catch (err) {
+          console.error("reel like notification error:", err);
+        }
+      })();
+
+      return;
     }
   } catch (error) {
     console.log(error);
