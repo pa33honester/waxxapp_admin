@@ -20,6 +20,9 @@ const { emitLiveSystemMessage } = require("./util/liveSystemMessage");
 // Proxy / auto-bid engine — server-side counter bidding.
 const { triggerAutoBid } = require("./server/autoBid/autoBid.controller");
 
+// Bundles multiple wins from one seller into a single pending-payment Order.
+const { findOrCreatePendingOrderForSeller } = require("./util/orderAggregator");
+
 io.on("connect", async (socket) => {
   console.log("Socket Connection done: ", socket.id);
   console.log("socket.handshake.query: ", socket.handshake.query);
@@ -521,47 +524,43 @@ io.on("connect", async (socket) => {
         console.warn("Product not found:", productId);
       }
 
-      const orderId = "AU#" + Math.floor(10000 + Math.random() * 90000);
       const purchasedTimeAdminRate = settingJSON.adminCommissionCharges || 10;
-      const purchasedTimeCancelOrderRate = settingJSON.cancelOrderCharges || 10;
       const paymentReminderMinutes = Number(settingJSON.paymentReminderForLiveAuction);
 
-      const order = await Order.create({
-        orderId,
-        userId: winner._id,
-        items: [
-          {
-            productId: product._id,
-            sellerId: product.seller,
-            purchasedTimeProductPrice: highestBid.currentBid,
-            purchasedTimeShippingCharges: product.shippingCharges || 0,
-            productCode: product.productCode || "",
-            productQuantity: 1,
-            attributesArray: productAttributes,
-            commissionPerProductQuantity: (highestBid.currentBid * purchasedTimeAdminRate) / 100,
-            itemDiscount: 0,
-            status: "Auction Pending Payment",
-            date: new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" }),
-          },
-        ],
-        liveAuctionPaymentReminderDuration: paymentReminderMinutes,
-        totalShippingCharges: product.shippingCharges || 0,
-        subTotal: highestBid.currentBid,
-        total: highestBid.currentBid,
-        finalTotal: highestBid.currentBid + (product.shippingCharges || 0),
-        totalItems: 1,
-        totalQuantity: 1,
-        purchasedTimeadminCommissionCharges: purchasedTimeAdminRate,
-        purchasedTimecancelOrderCharges: purchasedTimeCancelOrderRate,
-        paymentGateway: "",
+      // Append this live-auction win to any existing unpaid bundle Order
+      // from the same seller so the buyer pays one combined shipping fee
+      // for every item they take home from this show.
+      const { order } = await findOrCreatePendingOrderForSeller({
+        buyerId: winner._id,
+        sellerId: product.seller,
+        newItem: {
+          productId: product._id,
+          sellerId: product.seller,
+          purchasedTimeProductPrice: highestBid.currentBid,
+          purchasedTimeShippingCharges: product.shippingCharges || 0,
+          productCode: product.productCode || "",
+          productQuantity: 1,
+          attributesArray: productAttributes,
+          commissionPerProductQuantity: (highestBid.currentBid * purchasedTimeAdminRate) / 100,
+          itemDiscount: 0,
+          status: "Bundle Pending Payment",
+          date: new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" }),
+        },
+        orderIdPrefix: "AU",
+        settingJSON,
       });
+
+      if (order.liveAuctionPaymentReminderDuration == null || order.liveAuctionPaymentReminderDuration === 0) {
+        order.liveAuctionPaymentReminderDuration = paymentReminderMinutes;
+        await order.save();
+      }
 
       const socket1 = await io.in("liveRoom:" + highestBid.userId.toString()).fetchSockets();
       console.log(`Emitted notifyPaymentDue`, socket1.length, winner._id);
 
       io.to("liveRoom:" + highestBid.userId.toString()).emit("notifyPaymentDue", {
         orderId: order._id,
-        itemId: order.items[0]._id,
+        itemId: order.items[order.items.length - 1]._id,
         productId,
         productAttributes,
         amount: highestBid.currentBid,

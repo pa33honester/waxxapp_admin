@@ -7,6 +7,7 @@ const Order = require("../server/order/order.model");
 const User = require("../server/user/user.model");
 
 const admin = require("../util/privateKey");
+const { findOrCreatePendingOrderForSeller } = require("../util/orderAggregator");
 
 const manualAuctionQueue = new Bull("manual-auction-queue", {
   redis: { host: "127.0.0.1", port: 6379 },
@@ -45,42 +46,32 @@ manualAuctionQueue.process("closeManualAuction", async (job) => {
   }
 
   // Top bidder always wins if there is any bid
-  const orderId = "AU#" + Math.floor(10000 + Math.random() * 90000);
   const adminRate = settingJSON.adminCommissionCharges || 10;
-  const cancelRate = settingJSON.cancelOrderCharges || 10;
   const reminderMinutes = Number(settingJSON.paymentReminderForManualAuction);
 
-  const [seller, buyer, order] = await Promise.all([
+  const [seller, buyer, { order }] = await Promise.all([
     Seller.findOne({ _id: product.seller }).select("isBlock fcmToken"),
     User.findOne({ _id: topBid.userId }).select("isBlock fcmToken firstName"),
-    Order.create({
-      orderId,
-      userId: topBid.userId,
-      items: [
-        {
-          productId: product._id,
-          sellerId: product.seller,
-          purchasedTimeProductPrice: topBid.currentBid,
-          purchasedTimeShippingCharges: product.shippingCharges || 0,
-          productCode: product.productCode || "",
-          productQuantity: 1,
-          attributesArray: topBid.attributes,
-          commissionPerProductQuantity: (topBid.currentBid * adminRate) / 100,
-          itemDiscount: 0,
-          status: "Manual Auction Pending Payment",
-          date: new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" }),
-        },
-      ],
-      manualAuctionPaymentReminderDuration: reminderMinutes,
-      totalShippingCharges: product.shippingCharges || 0,
-      subTotal: topBid.currentBid,
-      total: topBid.currentBid,
-      finalTotal: topBid.currentBid + (product.shippingCharges || 0),
-      totalItems: 1,
-      totalQuantity: 1,
-      purchasedTimeadminCommissionCharges: adminRate,
-      purchasedTimecancelOrderCharges: cancelRate,
-      paymentGateway: "",
+    // Append this win to any existing unpaid bundle from the same seller so
+    // the buyer pays one combined shipping fee for the whole show's wins.
+    findOrCreatePendingOrderForSeller({
+      buyerId: topBid.userId,
+      sellerId: product.seller,
+      newItem: {
+        productId: product._id,
+        sellerId: product.seller,
+        purchasedTimeProductPrice: topBid.currentBid,
+        purchasedTimeShippingCharges: product.shippingCharges || 0,
+        productCode: product.productCode || "",
+        productQuantity: 1,
+        attributesArray: topBid.attributes,
+        commissionPerProductQuantity: (topBid.currentBid * adminRate) / 100,
+        itemDiscount: 0,
+        status: "Bundle Pending Payment",
+        date: new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" }),
+      },
+      orderIdPrefix: "AU",
+      settingJSON,
     }),
     Product.findByIdAndUpdate(productId, {
       productSaleType: 3,
@@ -89,7 +80,15 @@ manualAuctionQueue.process("closeManualAuction", async (job) => {
     AuctionBid.updateMany({ productId, mode: 2 }, { $set: { isWinningBid: false } }),
   ]);
 
-  const itemId = order.items[0]._id;
+  // Preserve the worker's existing reminder-snapshot behaviour on the
+  // Order doc so the validatePaymentCompletion job keeps working.
+  if (order.manualAuctionPaymentReminderDuration == null || order.manualAuctionPaymentReminderDuration === 0) {
+    order.manualAuctionPaymentReminderDuration = reminderMinutes;
+    await order.save();
+  }
+
+  // With bundling, the newly-added win is always the last item in the array.
+  const itemId = order.items[order.items.length - 1]._id;
 
   await Promise.all([
     AuctionBid.findByIdAndUpdate(topBid._id, {

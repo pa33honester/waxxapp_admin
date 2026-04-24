@@ -66,6 +66,13 @@ const sellerSchema = new mongoose.Schema(
 
     netPayout: { type: Number, default: 0 }, //after order delivered at that time he will earn
     amountWithdrawn: { type: Number, default: 0 },
+
+    // How multiple wins from this seller get charged for shipping in a
+    // single bundle Order. "max" mirrors Whatnot's default (buyer pays the
+    // heaviest single-item ship fee); "sum" preserves legacy per-item
+    // accumulation; "flat" ignores per-item charges and uses the first
+    // item's shipping as a flat rate.
+    shippingMode: { type: String, enum: ["sum", "max", "flat"], default: "max" },
   },
   {
     timestamps: true,

@@ -21,7 +21,19 @@ const orderSchema = new mongoose.Schema(
 
         status: {
           type: String,
-          enum: ["Pending", "Confirmed", "Out Of Delivery", "Delivered", "Cancelled", "Manual Auction Pending Payment", "Manual Auction Cancelled", "Auction Pending Payment", "Auction Cancelled", "Giveaway Win"],
+          enum: [
+            "Pending",
+            "Confirmed",
+            "Out Of Delivery",
+            "Delivered",
+            "Cancelled",
+            "Manual Auction Pending Payment",
+            "Manual Auction Cancelled",
+            "Auction Pending Payment",
+            "Auction Cancelled",
+            "Bundle Pending Payment", // multi-win bundle awaiting settle-up
+            "Giveaway Win",
+          ],
         },
 
         deliveredServiceName: { type: String, default: null },

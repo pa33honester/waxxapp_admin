@@ -8,6 +8,7 @@ const Order = require("../order/order.model");
 const Notification = require("../notification/notification.model");
 
 const admin = require("../../util/privateKey");
+const { findOrCreatePendingOrderForSeller } = require("../../util/orderAggregator");
 
 const getValidToken = (token) => {
   if (typeof token !== "string") return null;
@@ -205,38 +206,53 @@ exports.acceptOffer = async (req, res) => {
 
     const settingJSON = global.settingJSON || {};
     const adminRate = settingJSON.adminCommissionCharges || 10;
-    const cancelRate = settingJSON.cancelOrderCharges || 10;
-    const orderId = "OF#" + Math.floor(10000 + Math.random() * 90000);
     const shipping = product.shippingCharges || 0;
 
-    const order = await Order.create({
-      orderId,
-      userId: offer.buyerId,
-      items: [
-        {
-          productId: product._id,
-          sellerId: product.seller,
-          purchasedTimeProductPrice: finalAmount,
-          purchasedTimeShippingCharges: shipping,
-          productCode: product.productCode || "",
-          productQuantity: 1,
-          attributesArray: [],
-          commissionPerProductQuantity: (finalAmount * adminRate) / 100,
-          itemDiscount: 0,
-          status: "Pending",
-          date: new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" }),
-        },
-      ],
-      totalShippingCharges: shipping,
-      subTotal: finalAmount,
-      total: finalAmount,
-      finalTotal: finalAmount + shipping,
-      totalItems: 1,
-      totalQuantity: 1,
-      purchasedTimeadminCommissionCharges: adminRate,
-      purchasedTimecancelOrderCharges: cancelRate,
-      paymentGateway: "",
-    });
+    // Opt-in bundling: offers default to their own Order, but callers can
+    // pass ?bundle=true to fold the accepted offer into any existing unpaid
+    // bundle the buyer already has with this seller.
+    const bundle = String(req.query.bundle || "").toLowerCase() === "true";
+
+    const newItem = {
+      productId: product._id,
+      sellerId: product.seller,
+      purchasedTimeProductPrice: finalAmount,
+      purchasedTimeShippingCharges: shipping,
+      productCode: product.productCode || "",
+      productQuantity: 1,
+      attributesArray: [],
+      commissionPerProductQuantity: (finalAmount * adminRate) / 100,
+      itemDiscount: 0,
+      status: bundle ? "Bundle Pending Payment" : "Pending",
+      date: new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" }),
+    };
+
+    let order;
+    if (bundle) {
+      const bundleResult = await findOrCreatePendingOrderForSeller({
+        buyerId: offer.buyerId,
+        sellerId: product.seller,
+        newItem,
+        orderIdPrefix: "OF",
+        settingJSON,
+      });
+      order = bundleResult.order;
+    } else {
+      order = await Order.create({
+        orderId: "OF#" + Math.floor(10000 + Math.random() * 90000),
+        userId: offer.buyerId,
+        items: [newItem],
+        totalShippingCharges: shipping,
+        subTotal: finalAmount,
+        total: finalAmount,
+        finalTotal: finalAmount + shipping,
+        totalItems: 1,
+        totalQuantity: 1,
+        purchasedTimeadminCommissionCharges: adminRate,
+        purchasedTimecancelOrderCharges: settingJSON.cancelOrderCharges || 10,
+        paymentGateway: "",
+      });
+    }
 
     offer.status = "accepted";
     offer.orderId = order._id;
