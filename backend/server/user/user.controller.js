@@ -651,7 +651,7 @@ exports.adminDeleteUser = async (req, res) => {
 
     const userId = new mongoose.Types.ObjectId(req.query.userId);
 
-    const [user, userIsSeller] = await Promise.all([User.findById(userId), Seller.findOne({ userId: userId })]);
+    const user = await User.findById(userId);
 
     if (!user) {
       return res.status(200).json({ status: false, message: "User not found." });
@@ -661,9 +661,25 @@ exports.adminDeleteUser = async (req, res) => {
       return res.status(200).json({ status: false, message: "This test account cannot be deleted." });
     }
 
+    // Resolve the seller row via both directions — Seller.userId (forward
+    // ref) is the primary link, but older rows may only be reachable via
+    // User.seller. Taking the first non-null match catches both cases.
+    let userIsSeller = await Seller.findOne({ userId: userId });
+    if (!userIsSeller && user.seller) {
+      userIsSeller = await Seller.findById(user.seller);
+    }
+
     res.status(200).json({ status: true, message: "User deleted successfully." });
 
     await _purgeUserCascade(user, userIsSeller);
+
+    // Safety net: if any Seller row still references this user (stale
+    // duplicates, or findOne missed a non-indexed edge case), sweep them.
+    try {
+      await Seller.deleteMany({ userId: userId });
+    } catch (err) {
+      console.error("adminDeleteUser seller sweep error:", err);
+    }
   } catch (error) {
     console.log(error);
     return res.status(500).json({ status: false, error: error.message || "Internal Server Error" });
