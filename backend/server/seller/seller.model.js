@@ -75,5 +75,12 @@ const sellerSchema = new mongoose.Schema(
 
 sellerSchema.index({ userId: 1 });
 sellerSchema.index({ createdAt: -1 });
+sellerSchema.index({ isLive: 1, updatedAt: -1 });
+
+// Full-text index for unified search on businessName / names / tag.
+sellerSchema.index(
+  { businessName: "text", businessTag: "text", firstName: "text", lastName: "text" },
+  { weights: { businessName: 10, businessTag: 6, firstName: 3, lastName: 3 }, name: "seller_text_idx" }
+);
 
 module.exports = mongoose.model("Seller", sellerSchema);

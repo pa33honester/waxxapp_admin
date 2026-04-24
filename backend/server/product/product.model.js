@@ -80,4 +80,11 @@ productSchema.index({ searchCount: -1 });
 productSchema.index({ category: 1, createStatus: 1, scheduleTime: 1 });
 productSchema.index({ createStatus: 1, scheduleTime: 1 });
 
+// Full-text index for unified search. Weighted so matches on productName
+// outrank matches in description / productCode.
+productSchema.index(
+  { productName: "text", description: "text", productCode: "text" },
+  { weights: { productName: 10, productCode: 5, description: 1 }, name: "product_text_idx" }
+);
+
 module.exports = mongoose.model("Product", productSchema);

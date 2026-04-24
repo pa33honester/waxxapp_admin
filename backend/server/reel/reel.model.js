@@ -29,4 +29,7 @@ ReelSchema.index({ sellerId: 1 });
 ReelSchema.index({ productId: 1 });
 ReelSchema.index({ createdAt: -1 });
 
+// Full-text index for unified search on reel descriptions.
+ReelSchema.index({ description: "text" }, { name: "reel_text_idx" });
+
 module.exports = mongoose.model("Reel", ReelSchema);

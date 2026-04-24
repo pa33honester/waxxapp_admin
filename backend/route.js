@@ -140,6 +140,10 @@ app.use("/giveaway", GiveawayRoute);
 const OfferRoute = require("./server/offer/offer.route");
 app.use("/offer", OfferRoute);
 
+//Unified Search Route (products + sellers + live + reels)
+const SearchRoute = require("./server/search/search.route");
+app.use("/search", SearchRoute);
+
 //Reportreason Route
 const ReportreasonRoute = require("./server/reportReason/reportReason.route");
 app.use("/reportReason", ReportreasonRoute);
