@@ -632,6 +632,48 @@ exports.deleteUserAccount = async (req, res) => {
 
     res.status(200).json({ status: true, message: "User account has been deleted." });
 
+    await _purgeUserCascade(user, userIsSeller);
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({ status: false, error: error.message || "Internal Server Error" });
+  }
+};
+
+// Admin-triggered hard delete. Unlike deleteUserAccount (invoked by the user
+// themselves from the mobile app, which refuses on blocked accounts), admins
+// must be able to delete blocked users — "block, then delete" is the normal
+// moderation path.
+exports.adminDeleteUser = async (req, res) => {
+  try {
+    if (!req.query.userId) {
+      return res.status(200).json({ status: false, message: "userId must be required!" });
+    }
+
+    const userId = new mongoose.Types.ObjectId(req.query.userId);
+
+    const [user, userIsSeller] = await Promise.all([User.findById(userId), Seller.findOne({ userId: userId })]);
+
+    if (!user) {
+      return res.status(200).json({ status: false, message: "User not found." });
+    }
+
+    if (user.email && user.email.toLowerCase() === "erashoptest@gmail.com") {
+      return res.status(200).json({ status: false, message: "This test account cannot be deleted." });
+    }
+
+    res.status(200).json({ status: true, message: "User deleted successfully." });
+
+    await _purgeUserCascade(user, userIsSeller);
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({ status: false, error: error.message || "Internal Server Error" });
+  }
+};
+
+// Shared cascade cleanup used by both the user-initiated and admin-initiated
+// delete flows.
+async function _purgeUserCascade(user, userIsSeller) {
+  try {
     if (user) {
       if (user?.image) {
         const image = user?.image?.split("storage");
@@ -811,7 +853,6 @@ exports.deleteUserAccount = async (req, res) => {
     await userIsSeller?.deleteOne();
     await User.deleteOne({ _id: user?._id });
   } catch (error) {
-    console.log(error);
-    return res.status(500).json({ status: false, error: error.message || "Internal Server Error" });
+    console.log("_purgeUserCascade error:", error);
   }
-};
+}

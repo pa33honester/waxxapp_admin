@@ -45,4 +45,7 @@ route.get("/topCustomers", checkAccessWithSecretKey(), UserController.topCustome
 //delete user account
 route.delete("/deleteUserAccount", checkAccessWithSecretKey(), UserController.deleteUserAccount);
 
+//admin: hard delete a user (works on blocked users too)
+route.delete("/adminDelete", checkAccessWithSecretKey(), UserController.adminDeleteUser);
+
 module.exports = route;

@@ -29,7 +29,13 @@ export const userReducer = (state = initialState, action) => {
         }),
         userProfile: action.payload.data,
       };
-      case ActionType.GET_USER_ORDER: 
+    case ActionType.DELETE_USER:
+      return {
+        ...state,
+        user: state.user.filter((u) => u._id !== action.payload),
+        totalUser: Math.max(0, (state.totalUser || 0) - 1),
+      };
+      case ActionType.GET_USER_ORDER:
       
       return{
         ...state,

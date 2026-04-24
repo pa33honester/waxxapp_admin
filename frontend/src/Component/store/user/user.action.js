@@ -54,6 +54,24 @@ export const getUserProfile = (id) => (dispatch) => {
 };
 
 
+export const deleteUser = (userId) => (dispatch) => {
+  axios
+    .delete(`user/adminDelete?userId=${userId}`)
+    .then((res) => {
+      if (res.data.status) {
+        dispatch({
+          type: ActionType.DELETE_USER,
+          payload: userId,
+        });
+        setToast("success", "User deleted successfully");
+      } else {
+        setToast("error", res.data.message);
+      }
+    })
+    .catch((error) => setToast("error", error?.message || "Delete failed"));
+};
+
+
 export const getUserOrder = (userId,start,limit, status) => (dispatch) => {
   
   apiInstanceFetch

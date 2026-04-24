@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import Table from "../../extra/Table";
 import Iconb from "../../extra/Iconb";
 import { connect, useDispatch, useSelector } from "react-redux";
-import { getUser, userIsBlock } from "../../store/user/user.action";
+import { getUser, userIsBlock, deleteUser } from "../../store/user/user.action";
 import ToggleSwitch from "../../extra/ToggleSwitch";
 import dayjs from "dayjs";
 import Pagination from "../../extra/Pagination";
@@ -12,6 +12,8 @@ import Skeleton from "react-loading-skeleton";
 import { colors } from "../../../util/SkeletonColor";
 import "react-loading-skeleton/dist/skeleton.css";
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
+import DeleteIcon from '@mui/icons-material/Delete';
+import { warning } from "../../../util/Alert";
 
 
 const User = (props) => {
@@ -65,6 +67,16 @@ const User = (props) => {
       userDetails,
       userDetails?.isBlock === true ? false : true
     );
+  };
+
+  const handleDelete = (userId) => {
+    warning()
+      .then((isDeleted) => {
+        if (isDeleted) {
+          props.deleteUser(userId);
+        }
+      })
+      .catch((err) => console.log(err));
   };
 
   // searching
@@ -227,6 +239,29 @@ const User = (props) => {
       ),
     },
 
+    {
+      Header: "Delete",
+      body: "",
+      Cell: ({ row }) => (
+        <Iconb
+          type="button"
+          newClass={`themeFont boxCenter killbtn userBtn fs-5`}
+          btnIcon={<DeleteIcon sx={{ color: '#FF4C51' }} />}
+          style={{
+            borderRadius: "50px",
+            margin: "auto",
+            height: "38px",
+            width: "38px",
+            padding: "0px",
+          }}
+          isImage={true}
+          isDeleted={true}
+          disabled={row?.email === "erashoptest@gmail.com"}
+          onClick={() => handleDelete(row._id)}
+        />
+      ),
+    },
+
     // add more columns as needed
   ];
   return (
@@ -282,4 +317,4 @@ const User = (props) => {
   );
 };
 
-export default connect(null, { getUser, userIsBlock })(User);
+export default connect(null, { getUser, userIsBlock, deleteUser })(User);
