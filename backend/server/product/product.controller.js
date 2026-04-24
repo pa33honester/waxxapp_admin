@@ -1936,11 +1936,18 @@ exports.getFakeProducts = async (req, res) => {
 //get seller wise all products for admin
 exports.getSellerWise = async (req, res) => {
   try {
-    if (!req.query.sellerId) {
+    // Accept either sellerId (direct) or userId (resolve via reverse ref).
+    // The User → Seller link on the User doc isn't reliably populated on
+    // older rows, so admin callers prefer userId to avoid that footgun.
+    let seller = null;
+    if (req.query.sellerId) {
+      seller = await Seller.findById(req.query.sellerId);
+    } else if (req.query.userId) {
+      seller = await Seller.findOne({ userId: req.query.userId });
+    } else {
       return res.status(200).json({ status: false, message: "Oops! Invalid details." });
     }
 
-    const seller = await Seller.findById(req.query.sellerId);
     if (!seller) {
       return res.status(200).json({ status: false, message: "Seller does not found." });
     }

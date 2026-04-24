@@ -72,9 +72,13 @@ export const deleteUser = (userId) => (dispatch) => {
 };
 
 
-export const getUserProducts = (sellerId) => (dispatch) => {
+// Fetch products for a user. Prefer passing the userId — the backend
+// resolves User → Seller via the reverse ref, which works even for rows
+// where the forward User.seller pointer was never populated.
+export const getUserProducts = ({ userId, sellerId } = {}) => (dispatch) => {
+  const query = sellerId ? `sellerId=${sellerId}` : `userId=${userId}`;
   apiInstanceFetch
-    .get(`product/getSellerWise?sellerId=${sellerId}`)
+    .get(`product/getSellerWise?${query}`)
     .then((res) => {
       dispatch({
         type: ActionType.GET_USER_PRODUCTS,

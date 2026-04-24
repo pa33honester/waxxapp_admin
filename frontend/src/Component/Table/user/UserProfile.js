@@ -33,10 +33,10 @@ const UserProfile = (props) => {
   }, [dispatch, state, currentPage, size, status]);
 
   useEffect(() => {
-    if (userProfile?.isSeller && userProfile?.seller) {
-      dispatch(getUserProducts(userProfile.seller));
+    if (userProfile?.isSeller && userProfile?._id) {
+      dispatch(getUserProducts({ userId: userProfile._id, sellerId: userProfile.seller }));
     }
-  }, [dispatch, userProfile?.isSeller, userProfile?.seller]);
+  }, [dispatch, userProfile?.isSeller, userProfile?._id, userProfile?.seller]);
 
   useEffect(() => {
     setData(order);
@@ -229,7 +229,7 @@ const UserProfile = (props) => {
                   >
                     Orders
                   </button>
-                  {userProfile?.isSeller && userProfile?.seller && (
+                  {userProfile?.isSeller && (
                     <button
                       type="button"
                       className="btn"
