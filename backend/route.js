@@ -12,6 +12,10 @@ app.use("/admin", AdminRoute);
 const ShortPreviewRoute = require("./server/shortPreview/shortPreview.route");
 app.use("/", ShortPreviewRoute);
 
+//Live preview (public web page for shared live shows)
+const LivePreviewRoute = require("./server/livePreview/livePreview.route");
+app.use("/", LivePreviewRoute);
+
 //User Route
 const UserRoute = require("./server/user/user.route");
 app.use("/user", UserRoute);

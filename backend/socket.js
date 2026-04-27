@@ -45,13 +45,20 @@ io.on("connect", async (socket) => {
       const parsedData = JSON.parse(data);
       console.log("liveRoomConnect connected (parsed): ", parsedData);
 
+      // Comment / view / addView / lessView all broadcast to the
+      // "liveSellerRoom:<id>" room. The host's liveRoomConnect previously
+      // joined just "<id>" (no prefix), which meant the host never
+      // received comments — viewers saw chat, the seller didn't. Join
+      // the prefixed room so the host is part of the same broadcast set.
+      const sellerRoom = "liveSellerRoom:" + parsedData.liveSellingHistoryId;
+
       const sockets = await io.in(liveRoom).fetchSockets();
       console.log("sockets liveRoomConnect: ", sockets.length);
 
       if (sockets.length > 0) {
         sockets.forEach((socket) => {
-          if (socket.rooms.has(parsedData.liveSellingHistoryId)) {
-            console.log(`[joinLiveRoom] User ${socket.id} is already in room: ${parsedData.liveSellingHistoryId}`);
+          if (socket.rooms.has(sellerRoom)) {
+            console.log(`[joinLiveRoom] User ${socket.id} is already in room: ${sellerRoom}`);
             return; // Do not rejoin
           }
 
@@ -62,13 +69,13 @@ io.on("connect", async (socket) => {
             }
           });
 
-          socket.join(parsedData.liveSellingHistoryId);
+          socket.join(sellerRoom);
 
-          console.log(`Joined new room: ${parsedData.liveSellingHistoryId}`);
+          console.log(`Joined new room: ${sellerRoom}`);
           console.log("Updated Rooms After Joined new room:", Array.from(socket.rooms));
         });
 
-        io.in("liveSellerRoom:" + parsedData.liveSellingHistoryId).emit("liveRoomConnect", data);
+        io.in(sellerRoom).emit("liveRoomConnect", data);
       }
     } catch (err) {
       console.error(":x: Error in liveRoomConnect handler:", err.message, err);
