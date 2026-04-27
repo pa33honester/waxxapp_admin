@@ -54,6 +54,10 @@ function buildHtml({ sellerName, description, thumbnail, video, canonicalUrl }) 
   const safeThumb = escapeHtml(thumbnail);
   const safeVideo = escapeHtml(video);
   const safeCanonical = escapeHtml(canonicalUrl);
+  // Path component the app maps to a specific short. The canonical URL has
+  // the form https://www.waxxapp.com/short/<reelId> — the substring after
+  // /short/ is what app-side routers care about.
+  const reelIdEscaped = escapeHtml(canonicalUrl.split("/short/")[1] || "");
   const playStoreUrl = "https://play.google.com/store/apps/details?id=com.waxxapp";
   const appStoreUrl = "https://apps.apple.com/app/waxxapp/id000000000"; // TODO: replace with real iOS App Store id
 
@@ -108,22 +112,70 @@ function buildHtml({ sellerName, description, thumbnail, video, canonicalUrl }) 
       </div>
       <div class="actions">
         <a class="btn btn-primary" id="open-app" href="${safeCanonical}">Open in app</a>
-        <a class="btn btn-secondary" href="${playStoreUrl}">Install</a>
+        <a class="btn btn-secondary" id="install-btn" href="${playStoreUrl}">Install</a>
       </div>
     </div>
     <div class="footer">Powered by <a href="https://www.waxxapp.com">Waxxapp</a></div>
   </div>
   <script>
-    // Best-effort: when this page is reached because the app didn't auto-open
-    // (App Links unverified, app not installed, or the user is on desktop),
-    // route them to the right store on tap of "Install".
+    // The "Open in app" button can't just <a href> back to the same URL —
+    // browsers don't hand off to the app for a same-domain link tap.
+    // We intercept the click and explicitly ask the OS to dispatch:
+    //   • Android  → an Intent URL with package=com.waxxapp + a Play Store
+    //                fallback baked into S.browser_fallback_url, so it Just
+    //                Works whether or not the user has the app and whether
+    //                or not Android App Links are verified yet.
+    //   • iOS      → a custom waxxapp:// URL. If the app is installed it
+    //                fires; if not, the timer falls back to the App Store.
+    //   • Desktop  → no app possible, send to the install page.
     (function () {
+      var REEL_ID = ${JSON.stringify(reelIdEscaped)};
+      var PLAY_STORE = ${JSON.stringify(playStoreUrl)};
+      var APP_STORE = ${JSON.stringify(appStoreUrl)};
+      var openBtn = document.getElementById('open-app');
+      var installBtn = document.getElementById('install-btn');
+
       var ua = navigator.userAgent || "";
+      var isAndroid = /Android/i.test(ua);
       var isIOS = /iPad|iPhone|iPod/.test(ua);
-      if (isIOS) {
-        var btn = document.querySelector('.btn-secondary');
-        if (btn) btn.href = ${JSON.stringify(appStoreUrl)};
-      }
+
+      if (isIOS && installBtn) installBtn.href = APP_STORE;
+
+      if (!openBtn) return;
+
+      openBtn.addEventListener('click', function (e) {
+        e.preventDefault();
+        if (isAndroid) {
+          var fallback = encodeURIComponent(PLAY_STORE);
+          var intentUrl =
+            'intent://www.waxxapp.com/short/' + REEL_ID +
+            '#Intent;scheme=https;package=com.waxxapp;' +
+            'S.browser_fallback_url=' + fallback + ';end';
+          window.location.href = intentUrl;
+          return;
+        }
+        if (isIOS) {
+          // Custom scheme — registered in Info.plist as a URL type.
+          var customScheme = 'waxxapp://short/' + REEL_ID;
+          var t0 = Date.now();
+          var fallbackTimer = setTimeout(function () {
+            // If the page is still visible after 1.6s, the app didn't pick
+            // up the URL → send the user to the App Store.
+            if (Date.now() - t0 < 2000 && !document.hidden) {
+              window.location.href = APP_STORE;
+            }
+          }, 1600);
+          // If the app intercepts, the page goes hidden / pauses JS — stop
+          // the fallback so we don't bounce them off to the store.
+          document.addEventListener('visibilitychange', function () {
+            if (document.hidden) clearTimeout(fallbackTimer);
+          });
+          window.location.href = customScheme;
+          return;
+        }
+        // Desktop / other — there's no app to open, just push the install page.
+        window.location.href = PLAY_STORE;
+      });
     })();
   </script>
 </body>
