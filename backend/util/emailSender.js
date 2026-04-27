@@ -97,6 +97,15 @@ const templates = {
         : "Please review the listing and resubmit.",
     });
   },
+  emailChangeOtp({ firstName, code }) {
+    return baseTemplate({
+      heading: "Confirm your new email",
+      intro: `Hi ${firstName || "there"}, use the code below to confirm this email address on your account. The code expires in 5 minutes.`,
+      outro: `<div style="text-align:center;margin:8px 0 0 0;">
+                <div style="display:inline-block;padding:12px 24px;background:#f5f5f5;border-radius:6px;font-size:24px;letter-spacing:6px;font-weight:700;color:#222;">${code}</div>
+              </div><br/>If you didn't request this, you can ignore this email — your account stays as it is.`,
+    });
+  },
 };
 
 module.exports = { sendTransactionalEmail, templates };

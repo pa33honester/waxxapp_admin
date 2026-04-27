@@ -48,4 +48,11 @@ route.delete("/deleteUserAccount", checkAccessWithSecretKey(), UserController.de
 //admin: hard delete a user (works on blocked users too)
 route.delete("/adminDelete", checkAccessWithSecretKey(), UserController.adminDeleteUser);
 
+//change email — two-step flow (request 6-digit code → verify code)
+route.post("/changeEmail/request", checkAccessWithSecretKey(), UserController.requestEmailChange);
+route.post("/changeEmail/verify", checkAccessWithSecretKey(), UserController.verifyEmailChange);
+
+//change phone — Flutter verifies via Firebase first, then commits here
+route.post("/changePhone", checkAccessWithSecretKey(), UserController.changePhone);
+
 module.exports = route;

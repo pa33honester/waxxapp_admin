@@ -46,4 +46,17 @@ userSchema.index({ isBlock: 1 });
 userSchema.index({ createdAt: -1 });
 userSchema.index({ seller: -1 });
 
+// Email is unique among users who actually have one. Empty-string emails
+// (left over from phone-signup users before we required email at signup)
+// are excluded via the partial filter so they don't all collide on each
+// other. The one-shot `scripts/migrate_user_email.js` should be run before
+// this index is built in production to lower-case + de-dupe existing rows.
+userSchema.index(
+  { email: 1 },
+  {
+    unique: true,
+    partialFilterExpression: { email: { $type: "string", $ne: "" } },
+  }
+);
+
 module.exports = mongoose.model("User", userSchema);

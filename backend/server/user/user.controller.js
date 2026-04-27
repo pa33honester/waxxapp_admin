@@ -38,6 +38,10 @@ const Product = require("../product/product.model");
 const ProductRequest = require("../productRequest/productRequest.model");
 const AuctionBid = require("../auctionBid/auctionBid.model");
 const WithdrawRequest = require("../withdrawRequest/withdrawRequest.model");
+const OTP = require("../otp/otp.model");
+
+//email sender
+const { sendTransactionalEmail, templates } = require("../../util/emailSender");
 
 //generate UniqueId
 const generateUniqueId = async () => {
@@ -162,6 +166,25 @@ exports.store = async (req, res) => {
       }
 
       userQuery = await User.findOne({ mobileNumber: req.body.mobileNumber.trim() });
+
+      // For new mobile signups (no existing user found), require a real email.
+      // Returning users can still log in without re-supplying email since their
+      // record already has one — the existing-user branch below handles them.
+      if (!userQuery) {
+        const email = (req.body.email || "").trim();
+        if (!email) {
+          return res.status(200).json({ status: false, message: "email is required." });
+        }
+        if (!/^[\w.+-]+@[\w-]+\.[\w.-]+$/.test(email)) {
+          return res.status(200).json({ status: false, message: "Please enter a valid email." });
+        }
+        const emailTaken = await User.findOne({ email: email.toLowerCase() });
+        if (emailTaken) {
+          return res.status(200).json({ status: false, message: "This email is already linked to another account." });
+        }
+        // Normalise the email casing before it flows into userFunction.
+        req.body.email = email.toLowerCase();
+      }
     }
 
     const user = userQuery;
@@ -872,3 +895,135 @@ async function _purgeUserCascade(user, userIsSeller) {
     console.log("_purgeUserCascade error:", error);
   }
 }
+
+// ─── Email change ────────────────────────────────────────────────────────────
+// Two-step flow:
+//   1. requestEmailChange — validates the new email + sends a 6-digit code.
+//   2. verifyEmailChange  — confirms the code and writes User.email.
+// We store the pending change in the OTP collection (userId + purpose +
+// the proposed `email` field) so a single document captures everything we
+// need to validate the second step.
+
+const EMAIL_OTP_TTL_MS = 5 * 60 * 1000;
+const EMAIL_REGEX = /^[\w.+-]+@[\w-]+\.[\w.-]+$/;
+
+exports.requestEmailChange = async (req, res) => {
+  try {
+    const { userId, newEmail } = req.body;
+    if (!userId || !newEmail) {
+      return res.status(200).json({ status: false, message: "userId and newEmail are required." });
+    }
+    const email = String(newEmail).trim().toLowerCase();
+    if (!EMAIL_REGEX.test(email)) {
+      return res.status(200).json({ status: false, message: "Please enter a valid email." });
+    }
+
+    const user = await User.findById(userId).select("firstName email").lean();
+    if (!user) {
+      // Don't leak existence — same 200 either way.
+      return res.status(200).json({ status: true, message: "If the account exists, a code has been sent." });
+    }
+    if (user.email && user.email.toLowerCase() === email) {
+      return res.status(200).json({ status: false, message: "That's already your email." });
+    }
+
+    const taken = await User.findOne({ email, _id: { $ne: new mongoose.Types.ObjectId(userId) } }).lean();
+    if (taken) {
+      return res.status(200).json({ status: false, message: "This email is already linked to another account." });
+    }
+
+    const code = Math.floor(100000 + Math.random() * 900000); // 6 digits
+    const expiresAt = new Date(Date.now() + EMAIL_OTP_TTL_MS);
+
+    // Replace any prior in-flight email_change OTP for this user.
+    await OTP.findOneAndUpdate(
+      { userId: user._id, purpose: "email_change" },
+      { userId: user._id, purpose: "email_change", email, otp: code, expiresAt },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
+
+    const html = templates.emailChangeOtp({ firstName: user.firstName, code });
+    const result = await sendTransactionalEmail({ to: email, subject: "Confirm your new email", html });
+
+    if (!result.ok && result.reason === "not_configured") {
+      // Resend not set up — surface the code in the response so dev/staging
+      // builds can still complete the flow without a real email infra.
+      return res.status(200).json({ status: true, message: "Code generated (email not configured)", devCode: code });
+    }
+
+    return res.status(200).json({ status: true, message: "A 6-digit code has been sent to that email." });
+  } catch (error) {
+    console.error("requestEmailChange error:", error);
+    return res.status(500).json({ status: false, error: error.message || "Internal Server Error" });
+  }
+};
+
+exports.verifyEmailChange = async (req, res) => {
+  try {
+    const { userId, code } = req.body;
+    if (!userId || !code) {
+      return res.status(200).json({ status: false, message: "userId and code are required." });
+    }
+
+    const otpDoc = await OTP.findOne({ userId: new mongoose.Types.ObjectId(userId), purpose: "email_change" });
+    if (!otpDoc) {
+      return res.status(200).json({ status: false, message: "No pending email change. Request a new code." });
+    }
+    if (otpDoc.expiresAt && otpDoc.expiresAt.getTime() < Date.now()) {
+      await otpDoc.deleteOne();
+      return res.status(200).json({ status: false, message: "That code has expired. Request a new one." });
+    }
+    if (parseInt(code, 10) !== otpDoc.otp) {
+      return res.status(200).json({ status: false, message: "Incorrect code." });
+    }
+
+    // Re-check uniqueness at the moment of commit in case someone else just
+    // claimed the email between request and verify.
+    const taken = await User.findOne({ email: otpDoc.email, _id: { $ne: new mongoose.Types.ObjectId(userId) } }).lean();
+    if (taken) {
+      await otpDoc.deleteOne();
+      return res.status(200).json({ status: false, message: "This email is already linked to another account." });
+    }
+
+    await User.updateOne({ _id: new mongoose.Types.ObjectId(userId) }, { $set: { email: otpDoc.email } });
+    await otpDoc.deleteOne();
+
+    return res.status(200).json({ status: true, message: "Email updated successfully.", email: otpDoc.email });
+  } catch (error) {
+    console.error("verifyEmailChange error:", error);
+    return res.status(500).json({ status: false, error: error.message || "Internal Server Error" });
+  }
+};
+
+// ─── Phone change ────────────────────────────────────────────────────────────
+// The Flutter client verifies the new phone number with Firebase OTP first
+// (same flow as signup). On Firebase success it calls this endpoint to
+// commit the change. We don't re-verify the Firebase token — matches the
+// existing signup contract — but we do enforce uniqueness here.
+exports.changePhone = async (req, res) => {
+  try {
+    const { userId, newMobileNumber, newCountryCode } = req.body;
+    if (!userId || !newMobileNumber) {
+      return res.status(200).json({ status: false, message: "userId and newMobileNumber are required." });
+    }
+
+    const trimmed = String(newMobileNumber).trim();
+    const taken = await User.findOne({ mobileNumber: trimmed, _id: { $ne: new mongoose.Types.ObjectId(userId) } }).lean();
+    if (taken) {
+      return res.status(200).json({ status: false, message: "This phone number is already linked to another account." });
+    }
+
+    const update = { mobileNumber: trimmed };
+    if (newCountryCode) update.countryCode = String(newCountryCode).trim();
+
+    const updated = await User.findByIdAndUpdate(userId, { $set: update }, { new: true }).lean();
+    if (!updated) {
+      return res.status(200).json({ status: false, message: "User not found." });
+    }
+
+    return res.status(200).json({ status: true, message: "Phone number updated successfully.", user: updated });
+  } catch (error) {
+    console.error("changePhone error:", error);
+    return res.status(500).json({ status: false, error: error.message || "Internal Server Error" });
+  }
+};
