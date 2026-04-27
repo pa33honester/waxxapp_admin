@@ -36,6 +36,9 @@ route.patch("/setSellerOfflineAndResetProducts", checkAccessWithSecretKey(), liv
 //get live summary
 route.patch("/retrieveLiveAnalytics", checkAccessWithSecretKey(), liveSellerController.retrieveLiveAnalytics);
 
+//seller heartbeat: pinged every 30s while broadcasting to keep the live row fresh
+route.post("/heartbeat", checkAccessWithSecretKey(), liveSellerController.heartbeat);
+
 //scheduled live: seller creates a show
 route.post("/schedule", checkAccessWithSecretKey(), scheduledLiveController.schedule);
 

@@ -359,10 +359,12 @@ exports.getliveSellerList = async (req, res) => {
     // Seller.isLive can stay true while no one is actually broadcasting.
     // We sweep two cases here so the home page never serves zombie cards:
     //   (a) Seller.isLive=true with no LiveSeller row → flip isLive=false.
-    //   (b) LiveSeller row older than ZOMBIE_TTL_MS → delete row + flip seller.
+    //   (b) LiveSeller.lastHeartbeatAt older than HEARTBEAT_TTL_MS → delete row.
+    // The seller's app pings POST /liveSeller/heartbeat every 30s while
+    // broadcasting, so a 90s window is tight without false-positives.
     // Fake sellers are excluded — those are admin-managed.
-    const ZOMBIE_TTL_MS = 60 * 60 * 1000; // 1h hard cap on a live session
-    const staleBefore = new Date(Date.now() - ZOMBIE_TTL_MS);
+    const HEARTBEAT_TTL_MS = 90 * 1000;
+    const staleBefore = new Date(Date.now() - HEARTBEAT_TTL_MS);
 
     const liveSellerIds = await LiveSeller.find({}, { sellerId: 1, _id: 0 }).lean();
     const activeSellerIdSet = new Set(liveSellerIds.map((d) => String(d.sellerId)));
@@ -373,7 +375,16 @@ exports.getliveSellerList = async (req, res) => {
     ).lean();
     const orphanIds = orphanSellers.map((s) => s._id).filter((id) => !activeSellerIdSet.has(String(id)));
 
-    const staleLiveSellers = await LiveSeller.find({ updatedAt: { $lt: staleBefore } }, { _id: 1, sellerId: 1 }).lean();
+    // Fall back to createdAt for legacy rows that pre-date the heartbeat field.
+    const staleLiveSellers = await LiveSeller.find(
+      {
+        $or: [
+          { lastHeartbeatAt: { $lt: staleBefore } },
+          { lastHeartbeatAt: { $exists: false }, createdAt: { $lt: staleBefore } },
+        ],
+      },
+      { _id: 1, sellerId: 1 }
+    ).lean();
     const staleSellerIds = staleLiveSellers.map((l) => l.sellerId);
     const staleLiveSellerIds = staleLiveSellers.map((l) => l._id);
 
@@ -692,5 +703,29 @@ exports.retrieveLiveAnalytics = async (req, res) => {
   } catch (error) {
     console.error("Error fetching live metrics:", error);
     return res.status(500).json({ status: false, message: "Internal server error.", error: error.message });
+  }
+};
+
+// Seller heartbeat: pinged every 30s by the broadcasting seller's app.
+// Bumps lastHeartbeatAt on the LiveSeller row so the home-page sweep
+// (HEARTBEAT_TTL_MS in getliveSellerList) doesn't evict an active session.
+exports.heartbeat = async (req, res) => {
+  try {
+    const { sellerId } = req.body;
+    if (!sellerId) {
+      return res.status(200).json({ status: false, message: "sellerId is required." });
+    }
+
+    const result = await LiveSeller.updateOne({ sellerId: new mongoose.Types.ObjectId(sellerId) }, { $set: { lastHeartbeatAt: new Date() } });
+
+    if (result.matchedCount === 0) {
+      // No live row — probably already swept. Tell the caller so it can stop pinging.
+      return res.status(200).json({ status: false, message: "No active live session for this seller." });
+    }
+
+    return res.status(200).json({ status: true });
+  } catch (error) {
+    console.error("Heartbeat Error:", error);
+    return res.status(500).json({ status: false, message: "Internal server error" });
   }
 };

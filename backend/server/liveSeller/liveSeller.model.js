@@ -40,6 +40,12 @@ const liveSellerSchema = new mongoose.Schema(
       ],
       default: [],
     },
+
+    // Updated by the seller's app via POST /liveSeller/heartbeat every 30s
+    // while broadcasting. The home-page sweep evicts rows whose heartbeat
+    // is older than ~90s, so a crashed/killed seller drops off the buyer
+    // list within ~2 minutes regardless of the socket disconnect path.
+    lastHeartbeatAt: { type: Date, default: Date.now },
   },
   {
     timestamps: true,
