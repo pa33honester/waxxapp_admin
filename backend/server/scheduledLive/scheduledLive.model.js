@@ -5,6 +5,10 @@ const scheduledLiveSchema = new mongoose.Schema(
     sellerId: { type: mongoose.Schema.Types.ObjectId, ref: "Seller", required: true },
     title: { type: String, required: true, trim: true },
     description: { type: String, default: "", trim: true },
+    // Optional cover image the seller uploads when scheduling. Surfaces on
+    // the buyer-side Upcoming Shows cards and the seller's own list. Stored
+    // as the same baseURL+storage path the rest of the app uses.
+    image: { type: String, default: "" },
     scheduledAt: { type: Date, required: true },
     status: {
       type: String,

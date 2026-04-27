@@ -2,6 +2,11 @@
 const express = require("express");
 const route = express.Router();
 
+//multer (for the optional cover image when scheduling a show)
+const multer = require("multer");
+const storage = require("../../util/multer");
+const upload = multer({ storage });
+
 const checkAccessWithSecretKey = require("../../util/checkAccess");
 
 //controller
@@ -42,8 +47,8 @@ route.patch("/retrieveLiveAnalytics", checkAccessWithSecretKey(), liveSellerCont
 //seller heartbeat: pinged every 30s while broadcasting to keep the live row fresh
 route.post("/heartbeat", checkAccessWithSecretKey(), liveSellerController.heartbeat);
 
-//scheduled live: seller creates a show
-route.post("/schedule", checkAccessWithSecretKey(), scheduledLiveController.schedule);
+//scheduled live: seller creates a show (optional cover image as multipart "image")
+route.post("/schedule", checkAccessWithSecretKey(), upload.single("image"), scheduledLiveController.schedule);
 
 //scheduled live: get seller's upcoming shows
 route.get("/scheduledBySeller", checkAccessWithSecretKey(), scheduledLiveController.getScheduledBySeller);

@@ -4,6 +4,8 @@ const User = require("../user/user.model");
 const Seller = require("../seller/seller.model");
 const mongoose = require("mongoose");
 const admin = require("../../util/privateKey");
+const config = require("../../config");
+const { deleteFile } = require("../../util/deleteFile");
 
 // ─── Seller endpoints ─────────────────────────────────────────────────────────
 
@@ -12,23 +14,31 @@ exports.schedule = async (req, res) => {
     const { sellerId, title, description, scheduledAt } = req.body;
 
     if (!sellerId || !title || !scheduledAt) {
+      if (req.file) deleteFile(req.file);
       return res.status(200).json({ status: false, message: "sellerId, title, and scheduledAt are required." });
     }
 
     const scheduledDate = new Date(scheduledAt);
     if (isNaN(scheduledDate.getTime()) || scheduledDate <= new Date()) {
+      if (req.file) deleteFile(req.file);
       return res.status(200).json({ status: false, message: "scheduledAt must be a valid future date." });
     }
+
+    // Optional cover image. Saved by multer under storage/ — we store the
+    // public URL on the doc, matching the rest of the app's storage paths.
+    const image = req.file ? config.baseURL + req.file.path : "";
 
     const show = await ScheduledLive.create({
       sellerId,
       title: title.trim(),
       description: description?.trim() || "",
+      image,
       scheduledAt: scheduledDate,
     });
 
     return res.status(200).json({ status: true, message: "Show scheduled successfully", data: show });
   } catch (error) {
+    if (req.file) deleteFile(req.file);
     console.error("ScheduleLive Error:", error);
     return res.status(500).json({ status: false, message: "Internal server error" });
   }
@@ -98,8 +108,11 @@ exports.getUpcomingForUser = async (req, res) => {
           scheduledAt: 1,
           status: 1,
           sellerId: 1,
-          sellerName: { $ifNull: ["$seller.businessName", { $concat: ["$seller.firstName", " ", "$seller.lastName"] }] },
+          // The seller's *avatar* (so buyers can recognise who is broadcasting).
           sellerImage: "$seller.image",
+          // The cover image the seller uploaded for this specific show.
+          image: 1,
+          sellerName: { $ifNull: ["$seller.businessName", { $concat: ["$seller.firstName", " ", "$seller.lastName"] }] },
           hasReminder: {
             $in: [objectUserId, "$reminderUsers"],
           },
