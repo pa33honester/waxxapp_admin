@@ -638,8 +638,10 @@ exports.reelsOfSeller = async (req, res) => {
       return res.status(200).json({ status: false, message: "sellerId  must be requried." });
     }
 
-    const start = req.query.start ? parseInt(req.query.start) : 1;
-    const limit = req.query.limit ? parseInt(req.query.limit) : 20;
+    // Clamp pagination so a buggy or stale client (e.g. start=0) can't
+    // trigger a negative skip and 500 the request.
+    const start = Math.max(1, parseInt(req.query.start) || 1);
+    const limit = Math.max(1, parseInt(req.query.limit) || 20);
 
     const reel = await Reel.find({ sellerId: req.query.sellerId })
       .populate([
