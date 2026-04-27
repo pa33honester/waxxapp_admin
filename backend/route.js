@@ -8,6 +8,10 @@ const path = require("path");
 const AdminRoute = require("./server/admin/admin.route");
 app.use("/admin", AdminRoute);
 
+//Short preview (public web page for shared shorts; deep-link target for App Links / Universal Links)
+const ShortPreviewRoute = require("./server/shortPreview/shortPreview.route");
+app.use("/", ShortPreviewRoute);
+
 //User Route
 const UserRoute = require("./server/user/user.route");
 app.use("/user", UserRoute);

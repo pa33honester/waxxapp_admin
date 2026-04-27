@@ -1,0 +1,13 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.waxxapp",
+      "sha256_cert_fingerprints": [
+        "DE:FC:1D:B3:0A:DB:68:15:A4:68:F3:B7:CE:8C:EB:AE:4B:7D:3E:FB:CE:7E:EE:A2:C2:70:C2:A1:27:19:BE:D3",
+        "36:CE:36:FE:54:D7:9C:1F:5D:33:5E:00:EB:4E:C4:D9:34:66:3C:39:CC:C7:2D:D8:79:3F:2A:7F:2E:9A:AD:FD"
+      ]
+    }
+  }
+]

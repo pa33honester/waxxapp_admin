@@ -61,6 +61,18 @@ global.updateSettingFile = (settingData) => {
 app.use(express.static(path.join(__dirname, "public")));
 app.use("/storage", express.static(path.join(__dirname, "storage")));
 
+// Android App Links + iOS Universal Links verification files. They MUST be
+// served before the SPA catch-all and with application/json content-type.
+// Apple's file is served WITHOUT an extension; iOS rejects it otherwise.
+app.get("/.well-known/assetlinks.json", (req, res) => {
+  res.type("application/json");
+  res.sendFile(path.join(__dirname, "well-known", "assetlinks.json"));
+});
+app.get("/.well-known/apple-app-site-association", (req, res) => {
+  res.type("application/json");
+  res.sendFile(path.join(__dirname, "well-known", "apple-app-site-association"));
+});
+
 //route.js
 const Route = require("./route");
 app.use("/", Route);
