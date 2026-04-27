@@ -483,6 +483,9 @@ exports.getliveSellerList = async (req, res) => {
             view: {
               $cond: [{ $eq: ["$isLive", true] }, "$liveseller.view", 0],
             },
+            // liveType used to be silently dropped here — the Flutter
+            // LivePageView reads it to decide auction-mode behaviour.
+            liveType: "$liveseller.liveType",
           },
         },
       ]),
@@ -505,6 +508,66 @@ exports.getliveSellerList = async (req, res) => {
       status: false,
       error: error.message || "Internal Server Error",
     });
+  }
+};
+
+// Single-doc fetch used by the /live/<id> deep-link target on Flutter.
+// Returns the same flat shape as items inside `getliveSellerList` so the
+// existing LiveSeller model parses it without changes.
+exports.getLiveByHistoryId = async (req, res) => {
+  try {
+    const { liveSellingHistoryId } = req.params;
+    if (!liveSellingHistoryId || !mongoose.Types.ObjectId.isValid(liveSellingHistoryId)) {
+      return res.status(200).json({ status: false, message: "Invalid liveSellingHistoryId." });
+    }
+
+    const objectId = new mongoose.Types.ObjectId(liveSellingHistoryId);
+
+    const result = await LiveSeller.aggregate([
+      { $match: { liveSellingHistoryId: objectId } },
+      {
+        $lookup: {
+          from: "sellers",
+          localField: "sellerId",
+          foreignField: "_id",
+          as: "seller",
+        },
+      },
+      { $unwind: { path: "$seller", preserveNullAndEmptyArrays: false } },
+      {
+        $project: {
+          _id: "$seller._id",
+          isLive: "$seller.isLive",
+          firstName: "$seller.firstName",
+          lastName: "$seller.lastName",
+          businessTag: "$seller.businessTag",
+          businessName: "$seller.businessName",
+          email: "$seller.email",
+          mobileNumber: "$seller.mobileNumber",
+          isFake: "$seller.isFake",
+          video: "$seller.video",
+          image: "$seller.image",
+          selectedProducts: "$selectedProducts",
+          liveSellingHistoryId: "$liveSellingHistoryId",
+          view: "$view",
+          liveType: "$liveType",
+          sellerId: "$sellerId",
+        },
+      },
+    ]);
+
+    if (!result || result.length === 0) {
+      return res.status(200).json({ status: false, message: "This live show has ended." });
+    }
+
+    return res.status(200).json({
+      status: true,
+      message: "Live retrieved.",
+      data: result[0],
+    });
+  } catch (error) {
+    console.error("getLiveByHistoryId error:", error);
+    return res.status(500).json({ status: false, error: error.message || "Internal Server Error" });
   }
 };
 

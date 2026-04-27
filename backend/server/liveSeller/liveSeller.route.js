@@ -21,6 +21,9 @@ route.post("/", checkAccessWithSecretKey(), (req, res, next) => {
 //get live seller list
 route.get("/liveSellerList", checkAccessWithSecretKey(), liveSellerController.getliveSellerList);
 
+//get a single live by liveSellingHistoryId (used by /live/<id> deep-link routing)
+route.get("/byHistoryId/:liveSellingHistoryId", checkAccessWithSecretKey(), liveSellerController.getLiveByHistoryId);
+
 //get selectedProducts for the user
 route.get("/getSelectedProducts", checkAccessWithSecretKey(), liveSellerController.getSelectedProducts);
 
