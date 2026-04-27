@@ -354,6 +354,39 @@ exports.getliveSellerList = async (req, res) => {
     const start = parseInt(req.query.start) || 1;
     const limit = parseInt(req.query.limit) || 20;
 
+    // Opportunistic zombie cleanup: when a seller's app crashes or loses
+    // connectivity without firing the socket "disconnect" handler, their
+    // Seller.isLive can stay true while no one is actually broadcasting.
+    // We sweep two cases here so the home page never serves zombie cards:
+    //   (a) Seller.isLive=true with no LiveSeller row → flip isLive=false.
+    //   (b) LiveSeller row older than ZOMBIE_TTL_MS → delete row + flip seller.
+    // Fake sellers are excluded — those are admin-managed.
+    const ZOMBIE_TTL_MS = 60 * 60 * 1000; // 1h hard cap on a live session
+    const staleBefore = new Date(Date.now() - ZOMBIE_TTL_MS);
+
+    const liveSellerIds = await LiveSeller.find({}, { sellerId: 1, _id: 0 }).lean();
+    const activeSellerIdSet = new Set(liveSellerIds.map((d) => String(d.sellerId)));
+
+    const orphanSellers = await Seller.find(
+      { isLive: true, isFake: { $ne: true } },
+      { _id: 1 }
+    ).lean();
+    const orphanIds = orphanSellers.map((s) => s._id).filter((id) => !activeSellerIdSet.has(String(id)));
+
+    const staleLiveSellers = await LiveSeller.find({ updatedAt: { $lt: staleBefore } }, { _id: 1, sellerId: 1 }).lean();
+    const staleSellerIds = staleLiveSellers.map((l) => l.sellerId);
+    const staleLiveSellerIds = staleLiveSellers.map((l) => l._id);
+
+    if (orphanIds.length || staleSellerIds.length) {
+      await Promise.all([
+        Seller.updateMany(
+          { _id: { $in: [...orphanIds, ...staleSellerIds] } },
+          { $set: { isLive: false, liveSellingHistoryId: null } }
+        ),
+        staleLiveSellerIds.length ? LiveSeller.deleteMany({ _id: { $in: staleLiveSellerIds } }) : Promise.resolve(),
+      ]);
+    }
+
     const [fakeSellers, realSellers] = await Promise.all([
       Seller.aggregate([
         {

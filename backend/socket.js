@@ -756,10 +756,17 @@ io.on("connect", async (socket) => {
             liveSellingHistory.endTime = endTime;
             liveSellingHistory.duration = duration;
           }
+
+          // Mark the seller offline so the home page stops listing them as live.
+          // Without this, Seller.isLive stays true forever even though the
+          // LiveSeller row below is deleted, leaving zombie cards on the home page.
+          seller.isLive = false;
+          seller.liveSellingHistoryId = null;
         }
 
         await Promise.all([
           liveSellingHistory?.save(),
+          seller.save(),
           LiveSeller.deleteOne({ sellerId: seller?._id }),
           LiveSellingView.deleteMany({ liveSellingHistoryId: seller?.liveSellingHistoryId }),
           AuctionBid.deleteMany({ liveHistoryId: seller?.liveSellingHistoryId }),
