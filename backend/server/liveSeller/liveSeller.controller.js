@@ -792,3 +792,79 @@ exports.heartbeat = async (req, res) => {
     return res.status(500).json({ status: false, message: "Internal server error" });
   }
 };
+
+// Append a product to the seller's already-live show. Lets the seller
+// "Add product" mid-stream from the live page so they aren't locked into
+// the catalog they picked at go-live time. Emits the new selectedProducts
+// list to every viewer's socket so their Shop sheet refreshes in real time.
+exports.addProductToLive = async (req, res) => {
+  try {
+    const { sellerId, productId } = req.body;
+    if (!sellerId || !productId) {
+      return res.status(200).json({ status: false, message: "sellerId and productId are required." });
+    }
+    if (!mongoose.Types.ObjectId.isValid(sellerId) || !mongoose.Types.ObjectId.isValid(productId)) {
+      return res.status(200).json({ status: false, message: "Invalid sellerId or productId." });
+    }
+
+    const sellerObjectId = new mongoose.Types.ObjectId(sellerId);
+    const productObjectId = new mongoose.Types.ObjectId(productId);
+
+    const [liveSeller, product] = await Promise.all([
+      LiveSeller.findOne({ sellerId: sellerObjectId }),
+      Product.findOne({ _id: productObjectId, seller: sellerObjectId }).select("productName mainImage price attributes").lean(),
+    ]);
+
+    if (!liveSeller) {
+      return res.status(200).json({ status: false, message: "You are not currently broadcasting." });
+    }
+    if (!product) {
+      return res.status(200).json({ status: false, message: "Product not found in your catalog." });
+    }
+
+    const alreadyAdded = (liveSeller.selectedProducts || []).some(
+      (p) => p.productId && p.productId.toString() === productObjectId.toString()
+    );
+    if (alreadyAdded) {
+      return res.status(200).json({ status: false, message: "This product is already in the live show." });
+    }
+
+    const newEntry = {
+      productId: productObjectId,
+      productName: product.productName || "",
+      mainImage: product.mainImage || "",
+      price: product.price || 0,
+      productAttributes: product.attributes || [],
+      status: "pending",
+      winnerUserId: null,
+      winningBid: 0,
+    };
+
+    liveSeller.selectedProducts.push(newEntry);
+    await liveSeller.save();
+
+    // Notify every viewer + the host themselves so the in-app Shop sheet
+    // refreshes immediately. Fire-and-forget; missing io is tolerated for
+    // unit-test contexts.
+    try {
+      const room = "liveSellerRoom:" + liveSeller.liveSellingHistoryId.toString();
+      if (global.io) {
+        global.io.in(room).emit("selectedProductsUpdated", {
+          liveSellingHistoryId: liveSeller.liveSellingHistoryId.toString(),
+          selectedProducts: liveSeller.selectedProducts,
+        });
+      }
+    } catch (emitErr) {
+      console.error("addProductToLive emit error:", emitErr);
+    }
+
+    return res.status(200).json({
+      status: true,
+      message: "Product added to live show.",
+      selectedProducts: liveSeller.selectedProducts,
+    });
+  } catch (error) {
+    console.error("addProductToLive error:", error);
+    return res.status(500).json({ status: false, message: "Internal server error" });
+  }
+};

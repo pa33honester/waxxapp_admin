@@ -54,6 +54,9 @@ route.patch("/retrieveLiveAnalytics", checkAccessWithSecretKey(), liveSellerCont
 //seller heartbeat: pinged every 30s while broadcasting to keep the live row fresh
 route.post("/heartbeat", checkAccessWithSecretKey(), liveSellerController.heartbeat);
 
+//add a product to the currently-live show (mid-stream "Add product")
+route.post("/addProductToLive", checkAccessWithSecretKey(), liveSellerController.addProductToLive);
+
 //scheduled live: seller creates a show (optional cover image as multipart "image")
 route.post("/schedule", checkAccessWithSecretKey(), upload.single("image"), scheduledLiveController.schedule);
 
