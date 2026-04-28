@@ -5,6 +5,7 @@ const Seller = require("../seller/seller.model");
 const Product = require("../product/product.model");
 const User = require("../user/user.model");
 const LikeHistoryOfReel = require("../likeHistoryOfReel/likeHistoryOfReel.model");
+const ViewHistoryOfReel = require("../viewHistoryOfReel/viewHistoryOfReel.model");
 const Follower = require("../follower/follower.model");
 const ReportReel = require("../reportoReel/reportoReel.model");
 const Notification = require("../notification/notification.model");
@@ -653,26 +654,55 @@ exports.getReelsForUser = async (req, res) => {
   }
 };
 
-// Bump a reel's running view count by 1. Called fire-and-forget by the
-// Flutter client when a reel becomes the visible page in the swipe feed.
-// Imprecise (no per-user dedupe) but matches the TikTok-style "every open
-// counts" semantic the home rail wants. 200 even on missing reel so the
-// client never spends time retrying.
+// Bump a reel's view count by 1, but at most once per (userId, reelId).
+// Called fire-and-forget by the Flutter client when a reel becomes the
+// visible page in the swipe feed. Dedupe is enforced by a compound unique
+// index on ViewHistoryOfReel — we attempt the insert first and only $inc
+// Reel.view if the insert actually created a row. Duplicate-key errors
+// (E11000) mean this user has already counted for this reel and we
+// silently no-op. 200 always, so a flaky client never retries.
 exports.incrementView = async (req, res) => {
   try {
     const { reelId } = req.params;
+    const { userId } = req.body || {};
+
     if (!reelId || !mongoose.Types.ObjectId.isValid(reelId)) {
       return res.status(200).json({ status: false, message: "Invalid reelId." });
     }
-    const updated = await Reel.findByIdAndUpdate(
-      reelId,
-      { $inc: { view: 1 } },
-      { new: true, projection: { view: 1 } }
-    );
+    if (!userId || !mongoose.Types.ObjectId.isValid(userId)) {
+      return res.status(200).json({ status: false, message: "Invalid userId." });
+    }
+
+    let counted = false;
+    try {
+      await ViewHistoryOfReel.create({ userId, reelId });
+      counted = true;
+    } catch (err) {
+      // E11000 duplicate key on the (userId, reelId) compound index —
+      // user already viewed this reel. Anything else is a real error.
+      if (err && err.code !== 11000) {
+        throw err;
+      }
+    }
+
+    let view = 0;
+    if (counted) {
+      const updated = await Reel.findByIdAndUpdate(
+        reelId,
+        { $inc: { view: 1 } },
+        { new: true, projection: { view: 1 } }
+      );
+      view = updated?.view ?? 0;
+    } else {
+      const reel = await Reel.findById(reelId).select("view").lean();
+      view = reel?.view ?? 0;
+    }
+
     return res.status(200).json({
       status: true,
-      message: "View counted.",
-      view: updated?.view ?? 0,
+      message: counted ? "View counted." : "Already counted.",
+      counted,
+      view,
     });
   } catch (error) {
     console.error("incrementView error:", error);
