@@ -596,6 +596,7 @@ exports.getReelsForUser = async (req, res) => {
           productId: 1,
           sellerId: 1,
           like: 1,
+          view: { $ifNull: ["$view", 0] },
           isFake: 1,
           description: 1,
           createdAt: 1,
@@ -648,6 +649,33 @@ exports.getReelsForUser = async (req, res) => {
     });
   } catch (error) {
     console.error(error);
+    return res.status(500).json({ status: false, message: error.message || "Internal Server Error" });
+  }
+};
+
+// Bump a reel's running view count by 1. Called fire-and-forget by the
+// Flutter client when a reel becomes the visible page in the swipe feed.
+// Imprecise (no per-user dedupe) but matches the TikTok-style "every open
+// counts" semantic the home rail wants. 200 even on missing reel so the
+// client never spends time retrying.
+exports.incrementView = async (req, res) => {
+  try {
+    const { reelId } = req.params;
+    if (!reelId || !mongoose.Types.ObjectId.isValid(reelId)) {
+      return res.status(200).json({ status: false, message: "Invalid reelId." });
+    }
+    const updated = await Reel.findByIdAndUpdate(
+      reelId,
+      { $inc: { view: 1 } },
+      { new: true, projection: { view: 1 } }
+    );
+    return res.status(200).json({
+      status: true,
+      message: "View counted.",
+      view: updated?.view ?? 0,
+    });
+  } catch (error) {
+    console.error("incrementView error:", error);
     return res.status(500).json({ status: false, message: error.message || "Internal Server Error" });
   }
 };

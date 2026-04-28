@@ -16,6 +16,7 @@ const ReelSchema = new mongoose.Schema(
 
     duration: { type: Number, default: 0 },
     like: { type: Number, default: 0 },
+    view: { type: Number, default: 0 },
 
     isFake: { type: Boolean, default: false },
   },

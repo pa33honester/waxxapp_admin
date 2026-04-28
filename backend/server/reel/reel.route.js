@@ -45,4 +45,8 @@ route.get("/reelsOfSeller", checkAccessWithSecretKey(), ReelController.reelsOfSe
 //create like or dislike of reel by the user
 route.post("/likeOrDislikeOfReel", checkAccessWithSecretKey(), ReelController.likeOrDislikeOfReel);
 
+// fire-and-forget view bump from the Flutter reel viewer (one bump per
+// reel-becomes-visible event in the swipe feed)
+route.post("/incrementView/:reelId", checkAccessWithSecretKey(), ReelController.incrementView);
+
 module.exports = route;
