@@ -2,6 +2,7 @@ const ScheduledLive = require("./scheduledLive.model");
 const Follower = require("../follower/follower.model");
 const User = require("../user/user.model");
 const Seller = require("../seller/seller.model");
+const LiveSeller = require("../liveSeller/liveSeller.model");
 const Reel = require("../reel/reel.model");
 const LikeHistoryOfReel = require("../likeHistoryOfReel/likeHistoryOfReel.model");
 const Notification = require("../notification/notification.model");
@@ -267,10 +268,18 @@ exports.notifyFollowersLiveStarted = async (sellerId) => {
     //      they don't follow the account.
     // Then dedupe by stringified ObjectId. If neither cohort yields
     // anyone there's nothing to push.
-    const [followerRows, sellerReelIds] = await Promise.all([
+    //
+    // We also pull the seller's current LiveSeller row so we can include
+    // `liveSellingHistoryId` in the FCM payload — the Flutter tap handler
+    // routes on that to push the buyer straight into the broadcast.
+    const [followerRows, sellerReelIds, currentLive] = await Promise.all([
       Follower.find({ sellerId: sellerObjectId }).select("userId").lean(),
       Reel.find({ sellerId: sellerObjectId }).distinct("_id"),
+      LiveSeller.findOne({ sellerId: sellerObjectId }).select("liveSellingHistoryId").lean(),
     ]);
+    const liveSellingHistoryId = currentLive?.liveSellingHistoryId
+      ? currentLive.liveSellingHistoryId.toString()
+      : "";
 
     const reelLikerIds = sellerReelIds.length > 0
       ? await LikeHistoryOfReel.find({ reelId: { $in: sellerReelIds } }).distinct("userId")
@@ -360,6 +369,10 @@ exports.notifyFollowersLiveStarted = async (sellerId) => {
         type: "LIVE_STARTED",
         sellerId: sellerObjectId.toString(),
         sellerName,
+        // Routes the buyer's tap-handler straight into the broadcast.
+        // Empty string when the LiveSeller row didn't exist yet at push
+        // time — the Flutter side falls back to opening the Live tab.
+        liveSellingHistoryId,
       },
     });
 

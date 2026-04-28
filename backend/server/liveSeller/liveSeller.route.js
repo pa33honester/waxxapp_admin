@@ -58,6 +58,9 @@ route.post("/heartbeat", checkAccessWithSecretKey(), liveSellerController.heartb
 //add a product to the currently-live show (mid-stream "Add product")
 route.post("/addProductToLive", checkAccessWithSecretKey(), liveSellerController.addProductToLive);
 
+//replay the chat-comment backlog for a live show (used by buyers who join mid-stream)
+route.get("/chatHistory/:liveSellingHistoryId", checkAccessWithSecretKey(), liveSellerController.getLiveChatHistory);
+
 //scheduled live: seller creates a show (optional cover image as multipart "image")
 route.post("/schedule", checkAccessWithSecretKey(), upload.single("image"), scheduledLiveController.schedule);
 

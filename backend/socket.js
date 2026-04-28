@@ -4,6 +4,7 @@ const Seller = require("./server/seller/seller.model");
 const LiveSeller = require("./server/liveSeller/liveSeller.model");
 const LiveSellingHistory = require("./server/liveSellingHistory/liveSellingHistory.model");
 const LiveSellingView = require("./server/liveSellingView/liveSellingView.model");
+const LiveChat = require("./server/liveChat/liveChat.model");
 
 //momemt
 const moment = require("moment-timezone");
@@ -267,6 +268,21 @@ io.on("connect", async (socket) => {
     console.log("comment sockets liveSellingHistoryId ====================================: ", abc);
 
     io.in("liveSellerRoom:" + dataOfComment.liveSellingHistoryId).emit("comment", data);
+
+    // Persist the chat-comment so late-joiners can replay the backlog via
+    // GET /liveSeller/chatHistory/:id. Fire-and-forget — the broadcast
+    // above must not be blocked on the insert, and a write failure is
+    // recoverable (worst case: that one comment doesn't show up in the
+    // replay; the live transmission was already correct).
+    LiveChat.create({
+      liveSellingHistoryId: dataOfComment.liveSellingHistoryId,
+      userId: dataOfComment.userId || dataOfComment.loginUserId || null,
+      userName: dataOfComment.userName || "",
+      userImage: dataOfComment.userImage || "",
+      commentText: dataOfComment.commentText || dataOfComment.comment || "",
+      type: dataOfComment.type || "",
+      systemType: dataOfComment.systemType || "",
+    }).catch((err) => console.error("LiveChat.create error:", err.message));
   });
 
   socket.on("endLiveSeller", async (data) => {

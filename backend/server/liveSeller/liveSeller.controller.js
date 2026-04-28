@@ -1,4 +1,5 @@
 const LiveSeller = require("./liveSeller.model");
+const LiveChat = require("../liveChat/liveChat.model");
 
 //import model
 const User = require("../user/user.model");
@@ -865,6 +866,46 @@ exports.addProductToLive = async (req, res) => {
     });
   } catch (error) {
     console.error("addProductToLive error:", error);
+    return res.status(500).json({ status: false, message: "Internal server error" });
+  }
+};
+
+// Replay the recent chat-comment backlog for a live show. Buyers who
+// join mid-stream call this on initState before the socket starts
+// streaming new comments — the result is appended to the same RxList
+// that renders socket-driven new comments, so the chronological order
+// is preserved.
+exports.getLiveChatHistory = async (req, res) => {
+  try {
+    const { liveSellingHistoryId } = req.params;
+    if (!liveSellingHistoryId || !mongoose.Types.ObjectId.isValid(liveSellingHistoryId)) {
+      return res.status(200).json({ status: false, message: "liveSellingHistoryId is required." });
+    }
+
+    const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 50, 1), 200);
+    const docs = await LiveChat.find({ liveSellingHistoryId })
+      .sort({ createdAt: 1 })
+      .limit(limit)
+      .lean();
+
+    // Match the wire shape the socket emits so the Flutter renderer
+    // (`live_widget.dart` _buildCommentsSection) handles replay items
+    // identically to live ones — same keys: liveSellingHistoryId,
+    // userId, userName, userImage, commentText, type, systemType.
+    const comments = docs.map((d) => ({
+      liveSellingHistoryId: d.liveSellingHistoryId?.toString() || "",
+      userId: d.userId?.toString() || "",
+      userName: d.userName || "",
+      userImage: d.userImage || "",
+      commentText: d.commentText || "",
+      type: d.type || "",
+      systemType: d.systemType || "",
+      createdAt: d.createdAt,
+    }));
+
+    return res.status(200).json({ status: true, comments });
+  } catch (error) {
+    console.error("getLiveChatHistory error:", error);
     return res.status(500).json({ status: false, message: "Internal server error" });
   }
 };
