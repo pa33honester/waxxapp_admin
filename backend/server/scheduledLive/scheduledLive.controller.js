@@ -245,13 +245,19 @@ exports.notifyScheduledStart = async (sellerId) => {
  * for go-live alerts matches what users expect on competitor apps.
  */
 exports.notifyFollowersLiveStarted = async (sellerId) => {
-  if (!sellerId) return;
+  if (!sellerId) {
+    console.log("notifyFollowersLiveStarted: skipped — no sellerId");
+    return;
+  }
 
   try {
     const sellerObjectId = new mongoose.Types.ObjectId(sellerId);
 
     const seller = await Seller.findById(sellerObjectId).select("firstName lastName businessName image").lean();
-    if (!seller) return;
+    if (!seller) {
+      console.log(`notifyFollowersLiveStarted: skipped — seller ${sellerId} not found`);
+      return;
+    }
 
     const sellerName = seller.businessName || `${seller.firstName || ""} ${seller.lastName || ""}`.trim() || "A seller you follow";
 
@@ -278,6 +284,7 @@ exports.notifyFollowersLiveStarted = async (sellerId) => {
       seen.add(key);
       followerIds.push(id);
     }
+    console.log(`notifyFollowersLiveStarted: ${sellerName} — followers=${followerRows.length} reel-likers=${reelLikerIds.length} unique=${followerIds.length}`);
     if (followerIds.length === 0) return;
 
     // De-dupe with the scheduled-show reminder list (if any). Anyone in
@@ -295,20 +302,31 @@ exports.notifyFollowersLiveStarted = async (sellerId) => {
       .lean();
     if (recentShow && Array.isArray(recentShow.reminderUsers) && recentShow.reminderUsers.length > 0) {
       const reminderSet = new Set(recentShow.reminderUsers.map((id) => String(id)));
+      const before = followerIds.length;
       followerIds = followerIds.filter((id) => !reminderSet.has(String(id)));
+      console.log(`notifyFollowersLiveStarted: deduped ${before - followerIds.length} reminder-list overlaps`);
     }
-    if (followerIds.length === 0) return;
+    if (followerIds.length === 0) {
+      console.log("notifyFollowersLiveStarted: skipped — every recipient already on the scheduled-show reminder list");
+      return;
+    }
 
-    // Fetch FCM tokens for the deduped recipient set, skipping blocked /
-    // seller accounts (sellers don't need a "follow" notification).
+    // Fetch FCM tokens for the deduped recipient set. Only block out
+    // explicitly blocked accounts. We DO NOT filter on User.isSeller —
+    // a user who tapped Follow on this seller as a buyer has opted in
+    // regardless of whether their own User doc happens to be flagged
+    // as a seller (in Waxxapp every seller-side user has isSeller=true,
+    // and they were silently dropped from the audience for months).
     const recipients = await User.find({
       _id: { $in: followerIds },
       isBlock: { $ne: true },
-      isSeller: { $ne: true },
     })
       .select("_id fcmToken")
       .lean();
-    if (recipients.length === 0) return;
+    if (recipients.length === 0) {
+      console.log("notifyFollowersLiveStarted: skipped — recipient User docs not found / all blocked");
+      return;
+    }
 
     const date = new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" });
     const title = `${sellerName} is live now! 🚀✨`;
