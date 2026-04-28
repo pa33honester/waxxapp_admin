@@ -95,9 +95,10 @@ global.io = require("socket.io")(server);
 //socket.js
 require("./socket");
 
-//auctionWorker
-require("./workers/auctionWorker");
-require("./workers/manualAuctionWorker");
+// Auction workers disabled — the auction feature was removed. Files left
+// on disk for posterity; do not re-require unless the feature is restored.
+// require("./workers/auctionWorker");
+// require("./workers/manualAuctionWorker");
 require("./workers/giveawayWorker");
 
 //mongoose connection

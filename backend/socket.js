@@ -322,6 +322,15 @@ io.on("connect", async (socket) => {
     },
   });
 
+  // ─── Auction socket handlers — DISABLED ─────────────────────────────────
+  // The auction feature was removed front-to-back. All four handlers
+  // (initiateAuction, placeBid, declareWinner, manageAuctionExpiration)
+  // are kept here as no-ops so any straggler clients on old builds don't
+  // see crashes — they just see their events silently dropped. Files
+  // under server/auctionBid, server/autoBid, workers/auctionWorker, and
+  // workers/manualAuctionWorker are also left on disk but no longer
+  // mounted (see route.js + index.js).
+  /*
   socket.on("initiateAuction", async (data) => {
     console.log("Received auction started event:", data);
 
@@ -712,6 +721,8 @@ io.on("connect", async (socket) => {
       console.error("manageAuctionExpiration error:", error);
     }
   });
+  */
+  // ─── End disabled auction handlers ──────────────────────────────────────
 
   // ----- Giveaways -----
   // Seller-driven: start / draw. Enter is HTTP-only (buyer-originated volume, dedupe easier there).

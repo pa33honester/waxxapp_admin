@@ -136,25 +136,29 @@ app.use("/currency", CurrencyRoute);
 const WithdrawRequestRoute = require("./server/withdrawRequest/withdrawRequest.route");
 app.use("/withdrawRequest", WithdrawRequestRoute);
 
-//AuctionBid Route
-const AuctionBidRoute = require("./server/auctionBid/auctionBid.route");
-app.use("/auctionBid", AuctionBidRoute);
+// Auction + Offer routes have been disabled — the features were removed
+// front-to-back. Files under server/auctionBid, server/autoBid, and
+// server/offer are left on disk so historical data isn't broken; we
+// just stop mounting their HTTP surfaces. Re-add these requires if
+// the features are ever brought back.
+// const AuctionBidRoute = require("./server/auctionBid/auctionBid.route");
+// app.use("/auctionBid", AuctionBidRoute);
 
 //Giveaway Route
 const GiveawayRoute = require("./server/giveaway/giveaway.route");
 app.use("/giveaway", GiveawayRoute);
 
-//Offer Route (buyer→seller offers on static listings)
-const OfferRoute = require("./server/offer/offer.route");
-app.use("/offer", OfferRoute);
+// Offer Route — disabled (see note above auctionBid).
+// const OfferRoute = require("./server/offer/offer.route");
+// app.use("/offer", OfferRoute);
 
 //Unified Search Route (products + sellers + live + reels)
 const SearchRoute = require("./server/search/search.route");
 app.use("/search", SearchRoute);
 
-//AutoBid Route (proxy / max-bid)
-const AutoBidRoute = require("./server/autoBid/autoBid.route");
-app.use("/autoBid", AutoBidRoute);
+// AutoBid Route — disabled (see note above auctionBid).
+// const AutoBidRoute = require("./server/autoBid/autoBid.route");
+// app.use("/autoBid", AutoBidRoute);
 
 //Reportreason Route
 const ReportreasonRoute = require("./server/reportReason/reportReason.route");
