@@ -36,12 +36,18 @@ const sellerRequestSchema = new mongoose.Schema(
       country: { type: String, default: null },
     },
 
+    // Mobile-money payout details — see seller.model.js for the same
+    // shape and migration notes.
     bankDetails: {
       bankBusinessName: { type: String, default: null },
       bankName: { type: String, default: null },
-      accountNumber: { type: Number, default: null },
-      IFSCCode: { type: String, default: null },
-      branchName: { type: String, default: null },
+      momoNumber: { type: String, default: null },
+      networkName: {
+        type: String,
+        enum: ["MTN", "Vodafone", "AirtelTigo", null],
+        default: null,
+      },
+      momoName: { type: String, default: null },
     },
 
     isAccepted: { type: Boolean, default: false },

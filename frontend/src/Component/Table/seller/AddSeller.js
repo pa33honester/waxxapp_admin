@@ -25,9 +25,9 @@ const AddSeller = (props) => {
   const [businessTag, setBusinessTag] = useState("");
   const [bankName, setBankName] = useState("");
   const [bankBusinessName, setBankBusinessName] = useState("");
-  const [accountNumber, setAccountNumber] = useState("");
-  const [IFSCCode, setIFSCCode] = useState("");
-  const [branchName, setBranchName] = useState("");
+  const [momoNumber, setMomoNumber] = useState("");
+  const [networkName, setNetworkName] = useState("");
+  const [momoName, setMomoName] = useState("");
   const [countries, setCountries] = useState("");
   const [states, setStates] = useState("");
   const [cities, setCities] = useState("");
@@ -55,9 +55,9 @@ const AddSeller = (props) => {
     businessTag: "",
     bankName: "",
     bankBusinessName: "",
-    accountNumber: "",
-    IFSCCode: "",
-    branchName: "",
+    momoNumber: "",
+    networkName: "",
+    momoName: "",
   });
   const navigate = useNavigate();
   const handleUploadImage = (e) => {
@@ -88,9 +88,9 @@ const AddSeller = (props) => {
       setBusinessTag(state?.state?.businessTag);
       setBankName(state?.state?.bankDetails?.bankName);
       setBankBusinessName(state?.state?.bankDetails?.bankBusinessName);
-      setAccountNumber(state?.state?.bankDetails?.accountNumber);
-      setIFSCCode(state?.state?.bankDetails?.IFSCCode);
-      setBranchName(state?.state?.bankDetails?.branchName);
+      setMomoNumber(state?.state?.bankDetails?.momoNumber);
+      setNetworkName(state?.state?.bankDetails?.networkName);
+      setMomoName(state?.state?.bankDetails?.momoName);
       setCountries(state?.state?.address?.country);
       setStates(state?.state?.address?.state);
       setCities(state?.state?.address?.city);
@@ -120,10 +120,10 @@ const AddSeller = (props) => {
       !businessTag ||
       !bankName ||
       !bankBusinessName ||
-      !accountNumber ||
-      accountNumber < 0 ||
-      !IFSCCode ||
-      !branchName ||
+      !momoNumber ||
+      momoNumber < 0 ||
+      !networkName ||
+      !momoName ||
       password !== confirmPassword
     ) {
       let error = {};
@@ -151,11 +151,11 @@ const AddSeller = (props) => {
       if (!bankBusinessName)
         error.bankBusinessName = "Bank Business Name Is Required ";
       if (!bankName) error.bankName = "Bank Name Is Required ";
-      if (!accountNumber) error.accountNumber = "Account Number Is Required ";
-      if (accountNumber < 0)
-        error.accountNumber = "Invalid Account Number !... ";
-      if (!IFSCCode) error.IFSCCode = "IFSC Code Is Required ";
-      if (!branchName) error.branchName = "Branch Name Is Required ";
+      if (!momoNumber) error.momoNumber = "Momo Number Is Required ";
+      if (momoNumber < 0)
+        error.momoNumber = "Invalid Momo Number !... ";
+      if (!networkName) error.networkName = "Network Name Is Required ";
+      if (!momoName) error.momoName = "Momo Name Is Required ";
       return setError({ ...error });
     } else {
       const formData = new FormData();
@@ -172,9 +172,9 @@ const AddSeller = (props) => {
       formData.append("businessTag", businessTag);
       formData.append("bankName", bankName);
       formData.append("bankBusinessName", bankBusinessName);
-      formData.append("accountNumber", accountNumber);
-      formData.append("IFSCCode", IFSCCode);
-      formData.append("branchName", branchName);
+      formData.append("momoNumber", momoNumber);
+      formData.append("networkName", networkName);
+      formData.append("momoName", momoName);
       formData.append("country", countries);
       formData.append("state", states);
       formData.append("city", cities);
@@ -704,25 +704,25 @@ const AddSeller = (props) => {
 
                     <div className="col-md-6 col-12">
                       <Input
-                        label={`Account Number`}
-                        placeholder={`Account Number`}
-                        id={`accountNumber`}
-                        type={`number`}
-                        value={accountNumber}
+                        label={`Momo Number`}
+                        placeholder={`Momo Number`}
+                        id={`momoNumber`}
+                        type={`text`}
+                        value={momoNumber}
                         errorMessage={
-                          error.accountNumber && error.accountNumber
+                          error.momoNumber && error.momoNumber
                         }
                         onChange={(e) => {
-                          setAccountNumber(e.target.value);
+                          setMomoNumber(e.target.value);
                           if (!e.target.value) {
                             return setError({
                               ...error,
-                              accountNumber: `Account Number Is Required`,
+                              momoNumber: `Momo Number Is Required`,
                             });
                           } else {
                             return setError({
                               ...error,
-                              accountNumber: "",
+                              momoNumber: "",
                             });
                           }
                         }}
@@ -730,51 +730,51 @@ const AddSeller = (props) => {
                     </div>
                     <div className="col-md-6 col-12">
                       <Input
-                        label={`Branch Name`}
-                        placeholder={`Branch Name`}
-                        id={`branchName`}
-                        type={`branchName`}
-                        value={branchName}
-                        errorMessage={error.branchName && error.branchName}
-                        onChange={(e) => {
-                          setBranchName(e.target.value);
-                          if (!e.target.value) {
-                            return setError({
-                              ...error,
-                              branchName: `Branch Name Is Required`,
-                            });
-                          } else {
-                            return setError({
-                              ...error,
-                              branchName: "",
-                            });
-                          }
-                        }}
-                      />
-                    </div>
-                    <div className="col-md-6 col-12">
-                      <Input
-                        label={`IFSC Code`}
-                        placeholder={`IFSC Code`}
-                        id={`IFSCCode`}
+                        label={`Momo Name`}
+                        placeholder={`Momo Name`}
+                        id={`momoName`}
                         type={`text`}
-                        value={IFSCCode}
-                        errorMessage={error.IFSCCode && error.IFSCCode}
+                        value={momoName}
+                        errorMessage={error.momoName && error.momoName}
                         onChange={(e) => {
-                          setIFSCCode(e.target.value);
+                          setMomoName(e.target.value);
                           if (!e.target.value) {
                             return setError({
                               ...error,
-                              IFSCCode: `IFSCCode Is Required`,
+                              momoName: `Momo Name Is Required`,
                             });
                           } else {
                             return setError({
                               ...error,
-                              IFSCCode: "",
+                              momoName: "",
                             });
                           }
                         }}
                       />
+                    </div>
+                    <div className="col-md-6 col-12">
+                      {/* Network Name is restricted to {MTN, Vodafone, AirtelTigo}. */}
+                      <label htmlFor="networkName" className="form-label">Network Name</label>
+                      <select
+                        id="networkName"
+                        className="form-select"
+                        value={networkName || ""}
+                        onChange={(e) => {
+                          setNetworkName(e.target.value);
+                          if (!e.target.value) {
+                            return setError({ ...error, networkName: `Network Name Is Required` });
+                          }
+                          return setError({ ...error, networkName: "" });
+                        }}
+                      >
+                        <option value="">Select your network</option>
+                        <option value="MTN">MTN</option>
+                        <option value="Vodafone">Vodafone</option>
+                        <option value="AirtelTigo">AirtelTigo</option>
+                      </select>
+                      {error.networkName && (
+                        <div className="text-danger mt-1" style={{ fontSize: 12 }}>{error.networkName}</div>
+                      )}
                     </div>
                   </div>
                   <div className="row">

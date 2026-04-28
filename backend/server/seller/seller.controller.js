@@ -126,12 +126,12 @@ exports.sellerLogin = async (req, res) => {
       seller.address.state = req.body.state ? req.body.state : seller.address.state;
       seller.address.country = req.body.country ? req.body.country : seller.address.country;
 
-      //Update the seller's bankDetails fields
+      //Update the seller's mobile-money payout details
       seller.bankDetails.bankBusinessName = req.body.bankBusinessName ? req.body.bankBusinessName : seller.bankDetails.bankBusinessName;
       seller.bankDetails.bankName = req.body.bankName ? req.body.bankName : seller.bankDetails.bankName;
-      seller.bankDetails.accountNumber = parseInt(req.body.accountNumber) ? parseInt(req.body.accountNumber) : seller.bankDetails.accountNumber;
-      seller.bankDetails.IFSCCode = req.body.IFSCCode ? req.body.IFSCCode : seller.bankDetails.IFSCCode;
-      seller.bankDetails.branchName = req.body.branchName ? req.body.branchName : seller.bankDetails.branchName;
+      seller.bankDetails.momoNumber = req.body.momoNumber ? String(req.body.momoNumber) : seller.bankDetails.momoNumber;
+      seller.bankDetails.networkName = req.body.networkName ? req.body.networkName : seller.bankDetails.networkName;
+      seller.bankDetails.momoName = req.body.momoName ? req.body.momoName : seller.bankDetails.momoName;
 
       await seller.save();
 
@@ -186,12 +186,12 @@ exports.updateSellerProfile = async (req, res) => {
     seller.address.state = req.body.state ? req.body.state : seller.address.state;
     seller.address.country = req.body.country ? req.body.country : seller.address.country;
 
-    //Update the seller's bankDetails fields
+    //Update the seller's mobile-money payout details
     seller.bankDetails.bankBusinessName = req.body.bankBusinessName ? req.body.bankBusinessName : seller.bankDetails.bankBusinessName;
     seller.bankDetails.bankName = req.body.bankName ? req.body.bankName : seller.bankDetails.bankName;
-    seller.bankDetails.accountNumber = parseInt(req.body.accountNumber) ? parseInt(req.body.accountNumber) : seller.bankDetails.accountNumber;
-    seller.bankDetails.IFSCCode = req.body.IFSCCode ? req.body.IFSCCode : seller.bankDetails.IFSCCode;
-    seller.bankDetails.branchName = req.body.branchName ? req.body.branchName : seller.bankDetails.branchName;
+    seller.bankDetails.momoNumber = req.body.momoNumber ? String(req.body.momoNumber) : seller.bankDetails.momoNumber;
+    seller.bankDetails.networkName = req.body.networkName ? req.body.networkName : seller.bankDetails.networkName;
+    seller.bankDetails.momoName = req.body.momoName ? req.body.momoName : seller.bankDetails.momoName;
 
     if (req.files.image) {
       const image = seller?.image?.split("storage");
@@ -608,12 +608,12 @@ exports.createFakeSeller = async (req, res) => {
     seller.address.state = req?.body?.state;
     seller.address.country = req?.body?.country;
 
-    //seller's bankDetails fields
+    //seller's mobile-money payout details
     seller.bankDetails.bankBusinessName = req?.body?.bankBusinessName;
     seller.bankDetails.bankName = req?.body?.bankName;
-    seller.bankDetails.accountNumber = req?.body?.accountNumber;
-    seller.bankDetails.IFSCCode = req?.body?.IFSCCode;
-    seller.bankDetails.branchName = req?.body?.branchName;
+    seller.bankDetails.momoNumber = req?.body?.momoNumber ? String(req.body.momoNumber) : null;
+    seller.bankDetails.networkName = req?.body?.networkName;
+    seller.bankDetails.momoName = req?.body?.momoName;
 
     if (req.files.image) {
       const image = seller.image?.split("storage");

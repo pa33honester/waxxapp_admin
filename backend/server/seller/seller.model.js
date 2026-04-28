@@ -32,12 +32,22 @@ const sellerSchema = new mongoose.Schema(
       country: { type: String, default: null },
     },
 
+    // Mobile-money payout details. Renamed from bank fields to mobile-money
+    // semantics for the Ghana market — see scripts/migrate_seller_momo.js
+    // for the one-time data migration that copies the old keys onto the
+    // new ones. The `bankDetails` parent is intentionally kept as the doc
+    // path so existing references in the rest of the codebase still work
+    // structurally, only the leaf fields renamed.
     bankDetails: {
       bankBusinessName: { type: String, default: null },
       bankName: { type: String, default: null },
-      accountNumber: { type: Number, default: null },
-      IFSCCode: { type: String, default: null },
-      branchName: { type: String, default: null },
+      momoNumber: { type: String, default: null }, // was: accountNumber (Number)
+      networkName: {
+        type: String,
+        enum: ["MTN", "Vodafone", "AirtelTigo", null],
+        default: null,
+      }, // was: IFSCCode (free text)
+      momoName: { type: String, default: null }, // was: branchName
     },
 
     followers: { type: Number, default: 0 },

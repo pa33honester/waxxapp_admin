@@ -125,12 +125,12 @@ exports.storeRequest = async (req, res) => {
     request.address.state = req.body.state ? req.body.state : request.address.state;
     request.address.country = req.body.country ? req.body.country : request.address.country;
 
-    //seller's bankDetails fields
+    //seller's mobile-money payout details
     request.bankDetails.bankBusinessName = req.body.bankBusinessName ? req.body.bankBusinessName : request.bankDetails.bankBusinessName;
     request.bankDetails.bankName = req.body.bankName ? req.body.bankName : request.bankDetails.bankName;
-    request.bankDetails.accountNumber = parseInt(req.body.accountNumber) ? parseInt(req.body.accountNumber) : request.bankDetails.accountNumber;
-    request.bankDetails.IFSCCode = req.body.IFSCCode ? req.body.IFSCCode : request.bankDetails.IFSCCode;
-    request.bankDetails.branchName = req.body.branchName ? req.body.branchName : request.bankDetails.branchName;
+    request.bankDetails.momoNumber = req.body.momoNumber ? String(req.body.momoNumber) : request.bankDetails.momoNumber;
+    request.bankDetails.networkName = req.body.networkName ? req.body.networkName : request.bankDetails.networkName;
+    request.bankDetails.momoName = req.body.momoName ? req.body.momoName : request.bankDetails.momoName;
 
     const [saveRequest, isAccepted] = await Promise.all([request.save(), request?.isAccepted]);
 
@@ -256,12 +256,12 @@ exports.updateRequest = async (req, res) => {
     request.address.state = req.body.state ? req.body.state : request.address.state;
     request.address.country = req.body.country ? req.body.country : request.address.country;
 
-    //Update the seller's bankDetails fields
+    //Update the seller's mobile-money payout details
     request.bankDetails.bankBusinessName = req.body.bankBusinessName ? req.body.bankBusinessName : request.bankDetails.bankBusinessName;
     request.bankDetails.bankName = req.body.bankName ? req.body.bankName : request.bankDetails.bankName;
-    request.bankDetails.accountNumber = parseInt(req.body.accountNumber) ? parseInt(req.body.accountNumber) : request.bankDetails.accountNumber;
-    request.bankDetails.IFSCCode = req.body.IFSCCode ? req.body.IFSCCode : request.bankDetails.IFSCCode;
-    request.bankDetails.branchName = req.body.branchName ? req.body.branchName : request.bankDetails.branchName;
+    request.bankDetails.momoNumber = req.body.momoNumber ? String(req.body.momoNumber) : request.bankDetails.momoNumber;
+    request.bankDetails.networkName = req.body.networkName ? req.body.networkName : request.bankDetails.networkName;
+    request.bankDetails.momoName = req.body.momoName ? req.body.momoName : request.bankDetails.momoName;
 
     await request.save();
 
@@ -324,12 +324,12 @@ exports.acceptRequest = async (req, res) => {
     seller.address.state = request.address.state;
     seller.address.country = request.address.country;
 
-    //seller's bankDetails fields
+    //seller's mobile-money payout details (cloned from approved request)
     seller.bankDetails.bankBusinessName = request.bankDetails.bankBusinessName;
     seller.bankDetails.bankName = request.bankDetails.bankName;
-    seller.bankDetails.accountNumber = request.bankDetails.accountNumber;
-    seller.bankDetails.IFSCCode = request.bankDetails.IFSCCode;
-    seller.bankDetails.branchName = request.bankDetails.branchName;
+    seller.bankDetails.momoNumber = request.bankDetails.momoNumber;
+    seller.bankDetails.networkName = request.bankDetails.networkName;
+    seller.bankDetails.momoName = request.bankDetails.momoName;
 
     seller.storeName = request?.storeName;
     seller.businessType = request?.businessType;

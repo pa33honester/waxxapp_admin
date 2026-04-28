@@ -159,20 +159,20 @@ const Shop = (props) => {
                       </div>
                       
                       <div className="mb-3">
-                        <label className="form-label text-muted">Account Number</label>
-                        <div>{sellerProfile?.bankDetails?.accountNumber || "-"}</div>
+                        <label className="form-label text-muted">Momo Number</label>
+                        <div>{sellerProfile?.bankDetails?.momoNumber || "-"}</div>
                       </div>
                     </div>
-                    
+
                     <div className="col-md-6">
                       <div className="mb-3">
-                        <label className="form-label text-muted">Branch Name</label>
-                        <div>{sellerProfile?.bankDetails?.branchName || "-"}</div>
+                        <label className="form-label text-muted">Momo Name</label>
+                        <div>{sellerProfile?.bankDetails?.momoName || "-"}</div>
                       </div>
-                      
+
                       <div className="mb-3">
-                        <label className="form-label text-muted">IFSC Code</label>
-                        <div>{sellerProfile?.bankDetails?.IFSCCode || "-"}</div>
+                        <label className="form-label text-muted">Network Name</label>
+                        <div>{sellerProfile?.bankDetails?.networkName || "-"}</div>
                       </div>
                     </div>
                   </div>
