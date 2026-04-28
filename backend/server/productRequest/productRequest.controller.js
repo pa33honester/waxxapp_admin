@@ -3,6 +3,9 @@ const ProductRequest = require("./productRequest.model");
 //fs
 const fs = require("fs");
 
+//mongoose
+const mongoose = require("mongoose");
+
 //config
 const Config = require("../../config");
 
@@ -10,6 +13,36 @@ const Config = require("../../config");
 const Seller = require("../seller/seller.model");
 const Category = require("../category/category.model");
 const SubCategory = require("../subCategory/subCategory.model");
+
+// Mirrors the helper in product.controller.js — accepts the `promoCodes`
+// field from a multipart form (CSV string) or a JSON body (array). Drops
+// invalid ObjectIds and de-dupes. Empty/missing input → empty array.
+const parsePromoCodeIds = (raw) => {
+  if (raw == null) return [];
+  let list;
+  if (Array.isArray(raw)) {
+    list = raw;
+  } else if (typeof raw === "string") {
+    if (!raw.trim()) return [];
+    try {
+      const parsed = JSON.parse(raw);
+      list = Array.isArray(parsed) ? parsed : raw.split(",");
+    } catch (_) {
+      list = raw.split(",");
+    }
+  } else {
+    return [];
+  }
+  const seen = new Set();
+  const out = [];
+  for (const id of list) {
+    const s = String(id || "").trim();
+    if (!s || !mongoose.Types.ObjectId.isValid(s) || seen.has(s)) continue;
+    seen.add(s);
+    out.push(new mongoose.Types.ObjectId(s));
+  }
+  return out;
+};
 const Product = require("../product/product.model");
 
 //deleteFiles
@@ -104,6 +137,12 @@ exports.updateProductRequest = async (req, res) => {
         subCategory,
         seller: product.seller,
         productCode: product.productCode,
+        // Pending promo-code attachment list. If the seller didn't include
+        // promoCodes in the request, we carry over the product's current
+        // attachments so an unrelated edit doesn't clear them.
+        promoCodes: req.body.promoCodes !== undefined
+          ? parsePromoCodeIds(req.body.promoCodes)
+          : (product.promoCodes || []),
         updateStatus: "Pending",
         date: new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" }),
         ...auctionFields,
@@ -186,6 +225,9 @@ exports.updateProductRequest = async (req, res) => {
         shippingCharges: req.body.shippingCharges || product.shippingCharges,
         category,
         subCategory,
+        promoCodes: req.body.promoCodes !== undefined
+          ? parsePromoCodeIds(req.body.promoCodes)
+          : (product.promoCodes || []),
         updateStatus: "Approved",
         date: new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" }),
         ...auctionFields,
@@ -309,6 +351,7 @@ exports.acceptUpdateRequest = async (req, res) => {
       product.seller = updateRequest.seller;
       product.category = updateRequest.category;
       product.subCategory = updateRequest.subCategory;
+      product.promoCodes = updateRequest.promoCodes || product.promoCodes;
       product.date = new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" });
       product.updateStatus = "Approved";
       product.productSaleType = updateRequest.productSaleType;

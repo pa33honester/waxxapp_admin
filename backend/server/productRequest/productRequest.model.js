@@ -34,6 +34,11 @@ const productRequestSchema = new mongoose.Schema(
     category: { type: mongoose.Schema.Types.ObjectId, ref: "Category" },
     subCategory: { type: mongoose.Schema.Types.ObjectId, ref: "SubCategory" },
 
+    // Pending promo-code attachment list. When the request is approved
+    // (acceptUpdateRequest), this is copied onto the live Product's
+    // promoCodes array so the buyer side picks it up.
+    promoCodes: [{ type: mongoose.Schema.Types.ObjectId, ref: "PromoCode", default: [] }],
+
     //update product request status
     updateStatus: {
       type: String,
