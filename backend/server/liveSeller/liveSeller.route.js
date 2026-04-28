@@ -13,11 +13,18 @@ const checkAccessWithSecretKey = require("../../util/checkAccess");
 const liveSellerController = require("./liveSeller.controller");
 const scheduledLiveController = require("../scheduledLive/scheduledLive.controller");
 
-//live the seller for live Selling (+ notify scheduled-show reminder users after response)
+//live the seller for live Selling — after a successful go-live, fire two
+//notification paths (fire-and-forget so the response is never blocked):
+//  1. notifyScheduledStart  — pushes to users who set a reminder on a
+//                              matching scheduled show.
+//  2. notifyFollowersLiveStarted — pushes to everyone else who follows
+//                              the seller (de-duped against the reminder
+//                              list inside the function).
 route.post("/", checkAccessWithSecretKey(), (req, res, next) => {
   res.on("finish", () => {
     if (res.statusCode === 200) {
       scheduledLiveController.notifyScheduledStart(req.body.sellerId).catch(console.error);
+      scheduledLiveController.notifyFollowersLiveStarted(req.body.sellerId).catch(console.error);
     }
   });
   next();

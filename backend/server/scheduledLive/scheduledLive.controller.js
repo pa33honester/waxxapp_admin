@@ -2,6 +2,7 @@ const ScheduledLive = require("./scheduledLive.model");
 const Follower = require("../follower/follower.model");
 const User = require("../user/user.model");
 const Seller = require("../seller/seller.model");
+const Notification = require("../notification/notification.model");
 const mongoose = require("mongoose");
 const admin = require("../../util/privateKey");
 const config = require("../../config");
@@ -223,5 +224,102 @@ exports.notifyScheduledStart = async (sellerId) => {
     console.log(`LIVE_STARTED sent to ${tokens.length} users for show "${show.title}"`);
   } catch (err) {
     console.error("NotifyScheduledStart Error:", err);
+  }
+};
+
+// ─── Internal: notify followers when a seller goes live (ad-hoc) ─────────────
+
+/**
+ * Called after a seller goes live (via response-finish hook in
+ * liveSeller.route.js, alongside notifyScheduledStart). Sends a push
+ * notification to every follower of [sellerId] who isn't already going
+ * to be notified by notifyScheduledStart (which targets the show's
+ * reminderUsers). Also writes a Notification row per recipient so the
+ * push has a matching in-app entry.
+ */
+exports.notifyFollowersLiveStarted = async (sellerId) => {
+  if (!sellerId) return;
+
+  try {
+    const sellerObjectId = new mongoose.Types.ObjectId(sellerId);
+
+    const seller = await Seller.findById(sellerObjectId).select("firstName lastName businessName image").lean();
+    if (!seller) return;
+
+    const sellerName = seller.businessName || `${seller.firstName || ""} ${seller.lastName || ""}`.trim() || "A seller you follow";
+
+    // Pull every follower's userId in one go.
+    const followerRows = await Follower.find({ sellerId: sellerObjectId }).select("userId").lean();
+    if (followerRows.length === 0) return;
+    let followerIds = followerRows.map((f) => f.userId).filter(Boolean);
+
+    // De-dupe with the scheduled-show reminder list (if any). Anyone in
+    // there is already getting a notification from notifyScheduledStart;
+    // we don't want them to see the same push twice.
+    const now = new Date();
+    const recentShow = await ScheduledLive.findOne({
+      sellerId: sellerObjectId,
+      // Match either a still-scheduled show or one that notifyScheduledStart
+      // just flipped to "live" in the same request.
+      status: { $in: ["scheduled", "live"] },
+      scheduledAt: { $gte: new Date(now.getTime() - 30 * 60 * 1000), $lte: new Date(now.getTime() + 30 * 60 * 1000) },
+    })
+      .select("reminderUsers")
+      .lean();
+    if (recentShow && Array.isArray(recentShow.reminderUsers) && recentShow.reminderUsers.length > 0) {
+      const reminderSet = new Set(recentShow.reminderUsers.map((id) => String(id)));
+      followerIds = followerIds.filter((id) => !reminderSet.has(String(id)));
+    }
+    if (followerIds.length === 0) return;
+
+    // Fetch FCM tokens for the deduped recipient set, skipping blocked /
+    // seller accounts (sellers don't need a "follow" notification).
+    const recipients = await User.find({
+      _id: { $in: followerIds },
+      isBlock: { $ne: true },
+      isSeller: { $ne: true },
+    })
+      .select("_id fcmToken")
+      .lean();
+    if (recipients.length === 0) return;
+
+    const date = new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" });
+    const title = `${sellerName} is live now! 🚀✨`;
+    const body = `Tap to watch ${sellerName}'s live show.`;
+
+    // Persist Notification rows so the in-app inbox shows the alert
+    // even when the user has push notifications muted at the OS level.
+    await Notification.insertMany(
+      recipients.map((u) => ({
+        title,
+        message: body,
+        image: seller.image || null,
+        date,
+        userId: u._id,
+        sellerId: sellerObjectId,
+      })),
+      { ordered: false }
+    ).catch((err) => console.error("notifyFollowersLiveStarted insertMany error:", err.message));
+
+    const tokens = recipients.map((u) => u.fcmToken).filter(Boolean);
+    if (tokens.length === 0) {
+      console.log(`notifyFollowersLiveStarted: ${recipients.length} followers, none with fcmToken`);
+      return;
+    }
+
+    const adminInstance = await admin;
+    await adminInstance.messaging().sendEachForMulticast({
+      tokens,
+      notification: { title, body, image: seller.image || undefined },
+      data: {
+        type: "LIVE_STARTED",
+        sellerId: sellerObjectId.toString(),
+        sellerName,
+      },
+    });
+
+    console.log(`notifyFollowersLiveStarted: pushed to ${tokens.length}/${recipients.length} followers of ${sellerName}`);
+  } catch (err) {
+    console.error("notifyFollowersLiveStarted error:", err);
   }
 };
