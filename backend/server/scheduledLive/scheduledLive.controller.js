@@ -2,6 +2,8 @@ const ScheduledLive = require("./scheduledLive.model");
 const Follower = require("../follower/follower.model");
 const User = require("../user/user.model");
 const Seller = require("../seller/seller.model");
+const Reel = require("../reel/reel.model");
+const LikeHistoryOfReel = require("../likeHistoryOfReel/likeHistoryOfReel.model");
 const Notification = require("../notification/notification.model");
 const mongoose = require("mongoose");
 const admin = require("../../util/privateKey");
@@ -232,10 +234,15 @@ exports.notifyScheduledStart = async (sellerId) => {
 /**
  * Called after a seller goes live (via response-finish hook in
  * liveSeller.route.js, alongside notifyScheduledStart). Sends a push
- * notification to every follower of [sellerId] who isn't already going
- * to be notified by notifyScheduledStart (which targets the show's
+ * notification to every follower of [sellerId] **and every user who
+ * has liked one of this seller's reels** — minus anyone already being
+ * notified by notifyScheduledStart (which targets the show's
  * reminderUsers). Also writes a Notification row per recipient so the
  * push has a matching in-app entry.
+ *
+ * Why include reel-likers: a buyer who liked a short is showing
+ * stronger intent than a passive viewer; treating that as an opt-in
+ * for go-live alerts matches what users expect on competitor apps.
  */
 exports.notifyFollowersLiveStarted = async (sellerId) => {
   if (!sellerId) return;
@@ -248,10 +255,30 @@ exports.notifyFollowersLiveStarted = async (sellerId) => {
 
     const sellerName = seller.businessName || `${seller.firstName || ""} ${seller.lastName || ""}`.trim() || "A seller you follow";
 
-    // Pull every follower's userId in one go.
-    const followerRows = await Follower.find({ sellerId: sellerObjectId }).select("userId").lean();
-    if (followerRows.length === 0) return;
-    let followerIds = followerRows.map((f) => f.userId).filter(Boolean);
+    // Build the audience in two passes:
+    //   1. Followers of this seller (the original audience).
+    //   2. Users who have liked any reel posted by this seller — even if
+    //      they don't follow the account.
+    // Then dedupe by stringified ObjectId. If neither cohort yields
+    // anyone there's nothing to push.
+    const [followerRows, sellerReelIds] = await Promise.all([
+      Follower.find({ sellerId: sellerObjectId }).select("userId").lean(),
+      Reel.find({ sellerId: sellerObjectId }).distinct("_id"),
+    ]);
+
+    const reelLikerIds = sellerReelIds.length > 0
+      ? await LikeHistoryOfReel.find({ reelId: { $in: sellerReelIds } }).distinct("userId")
+      : [];
+
+    const seen = new Set();
+    let followerIds = [];
+    for (const id of [...followerRows.map((f) => f.userId), ...reelLikerIds].filter(Boolean)) {
+      const key = String(id);
+      if (seen.has(key)) continue;
+      seen.add(key);
+      followerIds.push(id);
+    }
+    if (followerIds.length === 0) return;
 
     // De-dupe with the scheduled-show reminder list (if any). Anyone in
     // there is already getting a notification from notifyScheduledStart;
@@ -303,7 +330,7 @@ exports.notifyFollowersLiveStarted = async (sellerId) => {
 
     const tokens = recipients.map((u) => u.fcmToken).filter(Boolean);
     if (tokens.length === 0) {
-      console.log(`notifyFollowersLiveStarted: ${recipients.length} followers, none with fcmToken`);
+      console.log(`notifyFollowersLiveStarted: ${recipients.length} recipients, none with fcmToken`);
       return;
     }
 
@@ -318,7 +345,7 @@ exports.notifyFollowersLiveStarted = async (sellerId) => {
       },
     });
 
-    console.log(`notifyFollowersLiveStarted: pushed to ${tokens.length}/${recipients.length} followers of ${sellerName}`);
+    console.log(`notifyFollowersLiveStarted: pushed to ${tokens.length}/${recipients.length} followers + reel-likers of ${sellerName}`);
   } catch (err) {
     console.error("notifyFollowersLiveStarted error:", err);
   }

@@ -18,8 +18,9 @@ const scheduledLiveController = require("../scheduledLive/scheduledLive.controll
 //  1. notifyScheduledStart  — pushes to users who set a reminder on a
 //                              matching scheduled show.
 //  2. notifyFollowersLiveStarted — pushes to everyone else who follows
-//                              the seller (de-duped against the reminder
-//                              list inside the function).
+//                              the seller OR has liked one of the
+//                              seller's reels (de-duped against the
+//                              reminder list inside the function).
 route.post("/", checkAccessWithSecretKey(), (req, res, next) => {
   res.on("finish", () => {
     if (res.statusCode === 200) {
