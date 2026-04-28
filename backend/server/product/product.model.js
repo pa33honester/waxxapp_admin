@@ -50,6 +50,12 @@ const productSchema = new mongoose.Schema(
     category: { type: mongoose.Schema.Types.ObjectId, ref: "Category" },
     subCategory: { type: mongoose.Schema.Types.ObjectId, ref: "SubCategory" },
 
+    // Admin-managed promo codes the seller has opted this product into.
+    // The seller picks from the existing global PromoCode list during
+    // product create/edit; redemption happens at checkout — the codes
+    // stored here are eligible against this product line item.
+    promoCodes: [{ type: mongoose.Schema.Types.ObjectId, ref: "PromoCode", default: [] }],
+
     //create product request status
     createStatus: {
       type: String,

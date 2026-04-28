@@ -43,6 +43,37 @@ const manualAuctionQueue = new Bull("manual-auction-queue", {
   redis: { host: "127.0.0.1", port: 6379 },
 });
 
+// Accepts the `promoCodes` field on a product create/update request in
+// either CSV form (multipart/form-data sends "id1,id2,id3" as a string)
+// or array form (JSON sends ["id1", "id2"]). Returns a deduped array of
+// valid ObjectIds — IDs that don't parse are silently dropped.
+const parsePromoCodeIds = (raw) => {
+  if (raw == null) return [];
+  let list;
+  if (Array.isArray(raw)) {
+    list = raw;
+  } else if (typeof raw === "string") {
+    if (!raw.trim()) return [];
+    try {
+      const parsed = JSON.parse(raw);
+      list = Array.isArray(parsed) ? parsed : raw.split(",");
+    } catch (_) {
+      list = raw.split(",");
+    }
+  } else {
+    return [];
+  }
+  const seen = new Set();
+  const out = [];
+  for (const id of list) {
+    const s = String(id || "").trim();
+    if (!s || !mongoose.Types.ObjectId.isValid(s) || seen.has(s)) continue;
+    seen.add(s);
+    out.push(new mongoose.Types.ObjectId(s));
+  }
+  return out;
+};
+
 const getValidToken = (token) => {
   if (typeof token !== "string") return null;
   const trimmedToken = token.trim();
@@ -245,6 +276,11 @@ exports.createProduct = async (req, res) => {
     product.enableReservePrice = req.body.enableReservePrice === "true";
     product.reservePrice = Number(req.body.reservePrice) || 0;
     product.auctionDuration = Number(req.body.auctionDuration) || 0;
+
+    // Optional global promo codes the seller opted into. Multipart sends
+    // this as a CSV string ("id1,id2,id3"); JSON sends an array. Accept
+    // either; ignore IDs that don't parse.
+    product.promoCodes = parsePromoCodeIds(req.body.promoCodes);
 
     let scheduleISO = null;
     let auctionStartISO = null;
@@ -610,6 +646,9 @@ exports.updateProduct = async (req, res) => {
     product.shippingCharges = req.body.shippingCharges || product.shippingCharges;
     product.category = category ? category._id : product.category;
     product.subCategory = subCategory ? subCategory._id : product.subCategory;
+    if (req.body.promoCodes !== undefined) {
+      product.promoCodes = parsePromoCodeIds(req.body.promoCodes);
+    }
     product.date = new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" });
     product.updateStatus = "Approved";
     product.isUpdateByAdmin = true;

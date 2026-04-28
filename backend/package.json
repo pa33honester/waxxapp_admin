@@ -1,6 +1,6 @@
 {
   "name": "waxxapp-backend",
-  "version": "1.7.1",
+  "version": "1.8.0",
   "description": "Node.js Restful CRUD API with Node.js, Express and MongoDB",
   "main": "index.js",
   "scripts": {
