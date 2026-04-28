@@ -5,6 +5,7 @@ const Seller = require("../seller/seller.model");
 const Product = require("../product/product.model");
 const User = require("../user/user.model");
 const LikeHistoryOfReel = require("../likeHistoryOfReel/likeHistoryOfReel.model");
+const Follower = require("../follower/follower.model");
 const ReportReel = require("../reportoReel/reportoReel.model");
 const Notification = require("../notification/notification.model");
 
@@ -569,6 +570,23 @@ exports.getReelsForUser = async (req, res) => {
         },
       },
       {
+        $lookup: {
+          from: "followers",
+          let: { sellerId: "$sellerId", userId: user._id },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $and: [{ $eq: ["$sellerId", "$$sellerId"] }, { $eq: ["$userId", "$$userId"] }],
+                },
+              },
+            },
+            { $limit: 1 },
+          ],
+          as: "followerLookup",
+        },
+      },
+      {
         $project: {
           video: 1,
           videoType: 1,
@@ -583,6 +601,9 @@ exports.getReelsForUser = async (req, res) => {
           createdAt: 1,
           isLike: {
             $cond: [{ $eq: [{ $size: "$likeHistoryofReel" }, 0] }, false, true],
+          },
+          isFollow: {
+            $cond: [{ $eq: [{ $size: "$followerLookup" }, 0] }, false, true],
           },
         },
       },

@@ -355,6 +355,8 @@ exports.updateProfile = async (req, res) => {
     user.dob = req.body.dob ? req.body.dob : user.dob;
     user.gender = req.body.gender ? req.body.gender : user.gender;
     user.location = req.body.location ? req.body.location : user.location;
+    user.country = req.body.country ? req.body.country.trim() : user.country;
+    user.address = req.body.address ? req.body.address.trim() : user.address;
     user.countryCode = req.body.countryCode ? req.body.countryCode : user.countryCode;
     user.mobileNumber = req.body.mobileNumber ? req.body.mobileNumber : user.mobileNumber;
 

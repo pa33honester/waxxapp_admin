@@ -5,6 +5,8 @@ const liveSellingHistorySchema = new mongoose.Schema(
     sellerId: { type: mongoose.Schema.Types.ObjectId, ref: "Seller" },
     totalUser: { type: Number, default: 0 }, //how many user joined to view live [user count]
     comment: { type: Number, default: 0 },
+    likeCount: { type: Number, default: 0 }, // ephemeral hearts sent during the broadcast
+
     startTime: { type: String },
     endTime: { type: String },
     duration: { type: String },

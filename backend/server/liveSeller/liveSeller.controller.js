@@ -536,6 +536,15 @@ exports.getLiveByHistoryId = async (req, res) => {
       },
       { $unwind: { path: "$seller", preserveNullAndEmptyArrays: false } },
       {
+        $lookup: {
+          from: "livesellinghistories",
+          localField: "liveSellingHistoryId",
+          foreignField: "_id",
+          as: "liveHistory",
+        },
+      },
+      { $unwind: { path: "$liveHistory", preserveNullAndEmptyArrays: true } },
+      {
         $project: {
           _id: "$seller._id",
           isLive: "$seller.isLive",
@@ -553,6 +562,7 @@ exports.getLiveByHistoryId = async (req, res) => {
           view: "$view",
           liveType: "$liveType",
           sellerId: "$sellerId",
+          likeCount: { $ifNull: ["$liveHistory.likeCount", 0] },
         },
       },
     ]);

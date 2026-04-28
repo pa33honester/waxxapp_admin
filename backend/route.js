@@ -124,6 +124,10 @@ app.use("/reel", ReelRoute);
 const ReportToReelRoute = require("./server/reportoReel/reportoReel.route");
 app.use("/reportToReel", ReportToReelRoute);
 
+//ReportToLive route
+const ReportToLiveRoute = require("./server/reportoLive/reportoLive.route");
+app.use("/reportToLive", ReportToLiveRoute);
+
 //Bank Route
 const BankRoute = require("./server/bank/bank.route");
 app.use("/bank", BankRoute);

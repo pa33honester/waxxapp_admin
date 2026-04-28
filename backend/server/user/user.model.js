@@ -8,6 +8,8 @@ const userSchema = new mongoose.Schema(
     dob: { type: String, trim: true, default: "" },
     gender: { type: String, trim: true, default: "" },
     location: { type: String, trim: true, default: "" },
+    country: { type: String, trim: true, default: "" },
+    address: { type: String, trim: true, default: "" },
     countryCode: { type: String, trim: true, default: null },
     mobileNumber: { type: String, trim: true, default: null },
     image: { type: String, trim: true, default: null },

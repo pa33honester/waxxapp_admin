@@ -203,6 +203,16 @@ io.on("connect", async (socket) => {
     console.log("addView sockets ====================================: ", xyz);
 
     io.in("liveSellerRoom:" + dataOfaddView.liveSellingHistoryId).emit("addView", liveSellingView.length);
+
+    // Send the running like total straight to the joiner so late entrants
+    // don't see a stale "0" until the next tap. Targeted emit (not the
+    // whole room) — existing viewers already have the latest count.
+    try {
+      const lh = await LiveSellingHistory.findById(dataOfaddView.liveSellingHistoryId).select("likeCount");
+      socket.emit("liveLikeCount", lh?.likeCount ?? 0);
+    } catch (err) {
+      console.error("addView likeCount seed error:", err.message);
+    }
   });
 
   socket.on("lessView", async (data) => {
@@ -283,6 +293,31 @@ io.on("connect", async (socket) => {
       type: dataOfComment.type || "",
       systemType: dataOfComment.systemType || "",
     }).catch((err) => console.error("LiveChat.create error:", err.message));
+  });
+
+  // Buyer sends a heart from the live page. We bump the running count on
+  // the LiveSellingHistory and broadcast the new total to the room so every
+  // viewer sees the same number — same shape as `addView`.
+  socket.on("liveLike", async (data) => {
+    try {
+      const parsed = typeof data === "string" ? JSON.parse(data) : data;
+      const liveSellingHistoryId = parsed?.liveSellingHistoryId;
+      if (!liveSellingHistoryId) return;
+
+      const room = "liveSellerRoom:" + liveSellingHistoryId;
+      if (!socket.rooms.has(room)) socket.join(room);
+
+      const updated = await LiveSellingHistory.findByIdAndUpdate(
+        liveSellingHistoryId,
+        { $inc: { likeCount: 1 } },
+        { new: true, projection: { likeCount: 1 } }
+      );
+      const total = updated?.likeCount ?? 0;
+
+      io.in(room).emit("liveLikeCount", total);
+    } catch (err) {
+      console.error("liveLike socket error:", err.message);
+    }
   });
 
   socket.on("endLiveSeller", async (data) => {
