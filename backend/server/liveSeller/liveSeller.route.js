@@ -58,6 +58,9 @@ route.post("/heartbeat", checkAccessWithSecretKey(), liveSellerController.heartb
 //add a product to the currently-live show (mid-stream "Add product")
 route.post("/addProductToLive", checkAccessWithSecretKey(), liveSellerController.addProductToLive);
 
+//mid-stream remove — host pulls a product off the currently-live show
+route.post("/removeProductFromLive", checkAccessWithSecretKey(), liveSellerController.removeProductFromLive);
+
 //replay the chat-comment backlog for a live show (used by buyers who join mid-stream)
 route.get("/chatHistory/:liveSellingHistoryId", checkAccessWithSecretKey(), liveSellerController.getLiveChatHistory);
 

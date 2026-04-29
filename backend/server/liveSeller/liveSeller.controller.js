@@ -947,6 +947,62 @@ exports.addProductToLive = async (req, res) => {
   }
 };
 
+// Mid-stream remove — host pulls a product off their currently-live
+// show. Mirrors addProductToLive: same auth (the LiveSeller row must
+// belong to sellerId), same emit (`selectedProductsUpdated` to the room
+// so every viewer's Available Products sheet refreshes immediately).
+exports.removeProductFromLive = async (req, res) => {
+  try {
+    const { sellerId, productId } = req.body;
+    if (!sellerId || !productId) {
+      return res.status(200).json({ status: false, message: "sellerId and productId are required." });
+    }
+    if (!mongoose.Types.ObjectId.isValid(sellerId) || !mongoose.Types.ObjectId.isValid(productId)) {
+      return res.status(200).json({ status: false, message: "Invalid sellerId or productId." });
+    }
+
+    const sellerObjectId = new mongoose.Types.ObjectId(sellerId);
+    const productObjectId = new mongoose.Types.ObjectId(productId);
+
+    const liveSeller = await LiveSeller.findOne({ sellerId: sellerObjectId });
+    if (!liveSeller) {
+      return res.status(200).json({ status: false, message: "You are not currently broadcasting." });
+    }
+
+    const before = (liveSeller.selectedProducts || []).length;
+    liveSeller.selectedProducts = (liveSeller.selectedProducts || []).filter(
+      (p) => p.productId && p.productId.toString() !== productObjectId.toString()
+    );
+    if (liveSeller.selectedProducts.length === before) {
+      return res.status(200).json({ status: false, message: "Product is not in the live show." });
+    }
+    await liveSeller.save();
+
+    // Same broadcast as addProductToLive so the host's own list and
+    // every viewer's Shop sheet refresh on the next socket tick.
+    try {
+      const room = "liveSellerRoom:" + liveSeller.liveSellingHistoryId.toString();
+      if (global.io) {
+        global.io.in(room).emit("selectedProductsUpdated", {
+          liveSellingHistoryId: liveSeller.liveSellingHistoryId.toString(),
+          selectedProducts: liveSeller.selectedProducts,
+        });
+      }
+    } catch (emitErr) {
+      console.error("removeProductFromLive emit error:", emitErr);
+    }
+
+    return res.status(200).json({
+      status: true,
+      message: "Product removed from live show.",
+      selectedProducts: liveSeller.selectedProducts,
+    });
+  } catch (error) {
+    console.error("removeProductFromLive error:", error);
+    return res.status(500).json({ status: false, message: "Internal server error" });
+  }
+};
+
 // Replay the recent chat-comment backlog for a live show. Buyers who
 // join mid-stream call this on initState before the socket starts
 // streaming new comments — the result is appended to the same RxList
