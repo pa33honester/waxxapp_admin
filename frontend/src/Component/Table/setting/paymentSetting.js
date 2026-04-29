@@ -10,7 +10,7 @@ import {
 import { getWithdraw } from "../../store/withdraw/withdraw.action";
 import Button from "../../extra/Button";
 import InfoTooltip from "../../../Component/extra/InfoTooltip";
-import { flutterWaveContent, razorpayContent, stripeContent } from "../../../Component/extra/infoContent";
+import { flutterWaveContent, paystackContent, razorpayContent, stripeContent } from "../../../Component/extra/infoContent";
 
 const PaymentSetting = (props) => {
   const { setting } = useSelector((state) => state.setting);
@@ -26,6 +26,9 @@ const PaymentSetting = (props) => {
   const [flutterWaveSwitch, setFlutterWaveSwitch] = useState(false);
   const [isCashOnDelivery, setIsCashOnDelivery] = useState(false);
   const [flutterWaveId, setFlutterWaveId] = useState("");
+  const [paystackSwitch, setPaystackSwitch] = useState(false);
+  const [paystackPublicKey, setPaystackPublicKey] = useState("");
+  const [paystackSecretKey, setPaystackSecretKey] = useState("");
 
 
   // error
@@ -67,6 +70,11 @@ const PaymentSetting = (props) => {
     setFlutterWaveSwitch(setting?.flutterWaveSwitch)
     setIsCashOnDelivery(setting?.isCashOnDelivery)
     setFlutterWaveId(setting?.flutterWaveId)
+
+    // Paystack
+    setPaystackSwitch(setting?.paystackSwitch);
+    setPaystackPublicKey(setting?.paystackPublicKey ?? "");
+    setPaystackSecretKey(setting?.paystackSecretKey ?? "");
   }, [setting]);
 
   const handleSubmit = () => {
@@ -99,7 +107,12 @@ const PaymentSetting = (props) => {
         razorSecretKey,
         stripePublishableKey,
         stripeSecretKey,
-        flutterWaveId
+        flutterWaveId,
+        // Paystack keys are optional — backend treats empty strings as
+        // "leave existing" via undefined-check, so a blank field doesn't
+        // wipe a previously-saved key.
+        paystackPublicKey,
+        paystackSecretKey,
       };
 
       props.updateSetting(settingData, setting?._id);
@@ -377,6 +390,52 @@ const PaymentSetting = (props) => {
                   },
                 }}
               >
+              </SettingBox>
+
+              {/* Paystack */}
+
+              <SettingBox
+                submit={(e) => handleSubmit(e)}
+                title={`Paystack Payment Setting`}
+                toggleSwitch={{
+                  switchName: "Paystack",
+                  switchValue: paystackSwitch,
+                  handleClick: () => {
+                    handleClick("paystack");
+                  },
+                }}
+              >
+                <Input
+                  type={`text`}
+                  label={`Paystack Public Key`}
+                  value={paystackPublicKey}
+                  newClass={`col-12`}
+                  placeholder={`Paystack public key (pk_...)`}
+                  onChange={(e) => {
+                    setPaystackPublicKey(e.target.value);
+                  }}
+                />
+
+                <Input
+                  type={`text`}
+                  label={`Paystack Secret Key`}
+                  value={paystackSecretKey}
+                  newClass={`col-12`}
+                  placeholder={`Paystack secret key (sk_...)`}
+                  onChange={(e) => {
+                    setPaystackSecretKey(e.target.value);
+                  }}
+                />
+                <div style={{
+                  width: "100%",
+                  display: "flex",
+                  justifyContent: "flex-end"
+                }}>
+                  <InfoTooltip
+                    title="Paystack Setting"
+                    content={paystackContent}
+                  />
+                </div>
               </SettingBox>
 
               {/* Box 6 */}

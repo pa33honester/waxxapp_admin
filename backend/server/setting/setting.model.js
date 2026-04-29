@@ -36,6 +36,10 @@ const settingSchema = new mongoose.Schema(
     flutterWaveId: { type: String, default: "FLUTTER WAVE ID" },
     flutterWaveSwitch: { type: Boolean, default: false },
 
+    paystackPublicKey: { type: String, default: "" },
+    paystackSecretKey: { type: String, default: "" },
+    paystackSwitch: { type: Boolean, default: false },
+
     paymentGateway: { type: Array, default: [] },
 
     adminCommissionCharges: { type: Number, default: 0 }, //in %

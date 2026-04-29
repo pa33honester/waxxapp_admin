@@ -68,6 +68,10 @@ app.use("/order", OrderRoute);
 const SettingRoute = require("./server/setting/setting.route");
 app.use("/setting", SettingRoute);
 
+//Payment gateway routes (server-side verification for Paystack, etc).
+const PaystackRoute = require("./server/payment/paystack.route");
+app.use("/payment/paystack", PaystackRoute);
+
 //PromoCode Route
 const PromoCodeRoute = require("./server/promoCode/promoCode.route");
 app.use("/promoCode", PromoCodeRoute);

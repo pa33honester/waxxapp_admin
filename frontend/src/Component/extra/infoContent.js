@@ -190,6 +190,45 @@ export const flutterWaveContent = [
     },
 ];
 
+export const paystackContent = [
+    {
+        label: "Paystack",
+        description: "Toggle to enable or disable Paystack as a payment method.",
+    },
+    {
+        label: "Paystack Public Key",
+        description: (
+            <>
+                Public key (starts with <code>pk_</code>) — embedded in the mobile app to launch Paystack's checkout.{" "}
+                <a
+                    href="https://dashboard.paystack.com/#/settings/developers"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ color: "#0d6efd", textDecoration: "underline" }}
+                >
+                    Get it from Paystack Dashboard
+                </a>
+            </>
+        ),
+    },
+    {
+        label: "Paystack Secret Key",
+        description: (
+            <>
+                Secret key (starts with <code>sk_</code>) — used server-side to verify transactions. Never share or commit this key.{" "}
+                <a
+                    href="https://dashboard.paystack.com/#/settings/developers"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ color: "#0d6efd", textDecoration: "underline" }}
+                >
+                    Manage in Paystack Dashboard
+                </a>
+            </>
+        ),
+    },
+];
+
 // Ads Setting
 export const androidAdsContent = [
     {

@@ -39,6 +39,10 @@ module.exports = {
   "flutterWaveSwitch": false,
   "flutterWaveId": "YOUR_FLUTTERWAVE_PUBLIC_KEY",
 
+  "paystackSwitch": false,
+  "paystackPublicKey": "YOUR_PAYSTACK_PUBLIC_KEY",
+  "paystackSecretKey": "YOUR_PAYSTACK_SECRET_KEY",
+
   // Email — Resend API key
   "resendApiKey": "YOUR_RESEND_API_KEY",
 

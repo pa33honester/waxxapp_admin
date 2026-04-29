@@ -32,6 +32,8 @@ exports.update = async (req, res) => {
     setting.withdrawCharges = parseInt(req.body.withdrawCharges) ? parseInt(req.body.withdrawCharges) : setting.withdrawCharges;
     setting.withdrawLimit = parseInt(req.body.withdrawLimit) ? parseInt(req.body.withdrawLimit) : setting.withdrawLimit;
     setting.flutterWaveId = req.body.flutterWaveId ? req.body.flutterWaveId : setting.flutterWaveId;
+    setting.paystackPublicKey = req.body.paystackPublicKey !== undefined ? req.body.paystackPublicKey : setting.paystackPublicKey;
+    setting.paystackSecretKey = req.body.paystackSecretKey !== undefined ? req.body.paystackSecretKey : setting.paystackSecretKey;
     setting.privateKey = req.body.privateKey ? JSON.parse(req.body.privateKey.trim()) : setting.privateKey;
     await setting.save();
 
@@ -64,6 +66,8 @@ exports.handleSwitch = async (req, res) => {
       setting.razorPaySwitch = !setting.razorPaySwitch;
     } else if (req.query.type === "flutterWave") {
       setting.flutterWaveSwitch = !setting.flutterWaveSwitch;
+    } else if (req.query.type === "paystack") {
+      setting.paystackSwitch = !setting.paystackSwitch;
     } else if (req.query.type === "productRequest") {
       setting.isAddProductRequest = !setting.isAddProductRequest;
     } else if (req.query.type === "updateProductRequest") {
