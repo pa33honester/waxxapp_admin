@@ -11,6 +11,10 @@ const productSchema = new mongoose.Schema(
     minimumOfferPrice: { type: Number, default: 0 }, // Used if allowOffer is true
     price: { type: Number, default: 0 }, //regular price
     shippingCharges: { type: Number, default: 0 },
+    // Scope of the seller-provided shipping. Optional — legacy products
+    // without this field render unchanged on the buyer side. Enum values
+    // mirror what the Flutter pricing-page CoolDropdown emits.
+    deliveryType: { type: String, enum: ["local", "nationwide", "international", null], default: null },
 
     enableAuction: { type: Boolean, default: false },
     scheduleTime: { type: Date, default: null }, //for auction

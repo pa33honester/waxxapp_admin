@@ -261,6 +261,8 @@ exports.createProduct = async (req, res) => {
     product.subCategory = subCategory._id;
     product.seller = seller._id;
     product.shippingCharges = parseFloat(req.body.shippingCharges) || 0;
+    // Optional delivery scope; null when seller skipped the picker.
+    product.deliveryType = req.body.deliveryType || null;
     product.productCode = req.body.productCode;
     product.productSaleType = Number(req.body.productSaleType);
     product.attributes = attributes;
@@ -510,6 +512,7 @@ exports.createProductByAdmin = async (req, res) => {
       createStatus: "Approved",
       isAddByAdmin: true,
       shippingCharges: parseFloat(req.body.shippingCharges) || 0,
+      deliveryType: req.body.deliveryType || null,
       productCode: req.body.productCode,
       date: new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" }),
     });
@@ -644,6 +647,8 @@ exports.updateProduct = async (req, res) => {
     product.description = req.body.description || product.description;
     product.price = req.body.price || product.price;
     product.shippingCharges = req.body.shippingCharges || product.shippingCharges;
+    // Preserve-on-empty: omitting deliveryType on edit doesn't wipe a saved value.
+    product.deliveryType = req.body.deliveryType || product.deliveryType;
     product.category = category ? category._id : product.category;
     product.subCategory = subCategory ? subCategory._id : product.subCategory;
     if (req.body.promoCodes !== undefined) {

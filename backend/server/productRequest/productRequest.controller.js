@@ -133,6 +133,7 @@ exports.updateProductRequest = async (req, res) => {
         recipientAddress: req.body.recipientAddress || product.recipientAddress,
         isImmediatePaymentRequired: req.body.isImmediatePaymentRequired === "true" || product.isImmediatePaymentRequired,
         shippingCharges: req.body.shippingCharges || product.shippingCharges,
+        deliveryType: req.body.deliveryType || product.deliveryType,
         category,
         subCategory,
         seller: product.seller,
@@ -223,6 +224,7 @@ exports.updateProductRequest = async (req, res) => {
         isImmediatePaymentRequired: req.body.isImmediatePaymentRequired === "true" || product.isImmediatePaymentRequired,
         minimumOfferPrice: req.body.minimumOfferPrice || product.minimumOfferPrice,
         shippingCharges: req.body.shippingCharges || product.shippingCharges,
+        deliveryType: req.body.deliveryType || product.deliveryType,
         category,
         subCategory,
         promoCodes: req.body.promoCodes !== undefined
@@ -348,6 +350,7 @@ exports.acceptUpdateRequest = async (req, res) => {
       product.recipientAddress = updateRequest.recipientAddress;
       product.isImmediatePaymentRequired = updateRequest.isImmediatePaymentRequired;
       product.shippingCharges = updateRequest.shippingCharges;
+      product.deliveryType = updateRequest.deliveryType;
       product.seller = updateRequest.seller;
       product.category = updateRequest.category;
       product.subCategory = updateRequest.subCategory;
