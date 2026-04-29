@@ -14,7 +14,25 @@ const productSchema = new mongoose.Schema(
     // Scope of the seller-provided shipping. Optional — legacy products
     // without this field render unchanged on the buyer side. Enum values
     // mirror what the Flutter pricing-page CoolDropdown emits.
+    // **Legacy after Shape B**: kept for buyer-app backwards compatibility.
+    // The seller's Pricing page now writes `deliveryOptions` (below); this
+    // single field is set to the FIRST non-zero option's type so old
+    // clients without the new array still see one sensible value.
     deliveryType: { type: String, enum: ["local", "nationwide", "international", null], default: null },
+    // Shape B per-option shipping prices. Each entry says "I offer
+    // <type> delivery at <price>". Empty array means the seller fell back
+    // to the legacy single shippingCharges + deliveryType pair (handled
+    // by a virtual-option fallback in the cart total path).
+    deliveryOptions: {
+      type: [
+        {
+          type: { type: String, enum: ["local", "nationwide", "international"], required: true },
+          price: { type: Number, default: 0 },
+          _id: false,
+        },
+      ],
+      default: [],
+    },
 
     enableAuction: { type: Boolean, default: false },
     scheduleTime: { type: Date, default: null }, //for auction

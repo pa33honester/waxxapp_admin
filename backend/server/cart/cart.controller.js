@@ -8,6 +8,25 @@ const Seller = require("../seller/seller.model");
 //mongoose
 const mongoose = require("mongoose");
 
+// Shape B: resolve which delivery option's price to snapshot at the
+// cart line. When the product has the new `deliveryOptions[]` array,
+// pick the buyer's requested type if it's offered, else default to the
+// first option. Legacy products (empty array) fall through to the
+// single-cost `shippingCharges` + `deliveryType` pair.
+function resolveCartShipping(product, requestedType) {
+  const opts = Array.isArray(product.deliveryOptions) ? product.deliveryOptions : [];
+  if (opts.length > 0) {
+    let chosen = null;
+    if (requestedType) {
+      const t = String(requestedType).trim().toLowerCase();
+      chosen = opts.find((o) => o.type === t);
+    }
+    if (!chosen) chosen = opts[0];
+    return { price: Number(chosen.price) || 0, type: chosen.type };
+  }
+  return { price: Number(product.shippingCharges) || 0, type: null };
+}
+
 //add product to cart for user
 exports.addToCart = async (req, res) => {
   try {
@@ -58,13 +77,15 @@ exports.addToCart = async (req, res) => {
         cart.items[itemIndex].productQuantity += parseInt(req.body.productQuantity);
       } else {
         //If the same product with a different attributesArray, or a new product is being added, push a new item to the items array
+        const ship = resolveCartShipping(product, req.body.chosenDeliveryType);
         cart.items.push({
           productId: product._id,
           sellerId: product.seller._id,
           productCode: product.productCode,
           productQuantity: parseInt(req.body.productQuantity),
           purchasedTimeProductPrice: product.price,
-          purchasedTimeShippingCharges: product.shippingCharges,
+          purchasedTimeShippingCharges: ship.price,
+          chosenDeliveryType: ship.type,
           attributesArray: req.body.attributesArray,
         });
       }
@@ -97,6 +118,13 @@ exports.addToCart = async (req, res) => {
           productName: 1,
           mainImage: 1,
           _id: 1,
+          // Shape B (v1.0.10): expose the seller's offered options so
+          // the buyer cart picker can render the per-item pills, plus
+          // legacy shippingCharges + deliveryType so legacy products
+          // still show one cost.
+          shippingCharges: 1,
+          deliveryType: 1,
+          deliveryOptions: 1,
         },
       });
 
@@ -108,6 +136,7 @@ exports.addToCart = async (req, res) => {
     } else {
       console.log("new cart created");
 
+      const ship = resolveCartShipping(product, req.body.chosenDeliveryType);
       const items = [
         {
           productId: product._id,
@@ -115,7 +144,8 @@ exports.addToCart = async (req, res) => {
           productQuantity: parseInt(req.body.productQuantity),
           productCode: product.productCode,
           purchasedTimeProductPrice: product.price,
-          purchasedTimeShippingCharges: product.shippingCharges,
+          purchasedTimeShippingCharges: ship.price,
+          chosenDeliveryType: ship.type,
           attributesArray: req.body.attributesArray,
         },
       ];
@@ -137,6 +167,13 @@ exports.addToCart = async (req, res) => {
           productName: 1,
           mainImage: 1,
           _id: 1,
+          // Shape B (v1.0.10): expose the seller's offered options so
+          // the buyer cart picker can render the per-item pills, plus
+          // legacy shippingCharges + deliveryType so legacy products
+          // still show one cost.
+          shippingCharges: 1,
+          deliveryType: 1,
+          deliveryOptions: 1,
         },
       });
 
@@ -279,6 +316,9 @@ exports.removeFromCart = async (req, res) => {
         productName: 1,
         mainImage: 1,
         _id: 1,
+        shippingCharges: 1,
+        deliveryType: 1,
+        deliveryOptions: 1,
       },
     });
 
@@ -329,6 +369,11 @@ exports.getCartProduct = async (req, res) => {
         enableAuction: 1,
         auctionEndDate: 1,
         _id: 1,
+        // Shape B: surface the seller's offered options + legacy fields
+        // so the buyer cart UI can render the per-item picker.
+        shippingCharges: 1,
+        deliveryType: 1,
+        deliveryOptions: 1,
       },
     });
 
@@ -343,6 +388,81 @@ exports.getCartProduct = async (req, res) => {
       status: true,
       message: "Retrive all products added to cart.",
       data: populatedCart,
+    });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({ status: false, message: "Internal Server Error" });
+  }
+};
+
+// Shape B: buyer flips the chosen delivery option from the cart UI
+// without removing the item. Body: { userId, productId, attributesArray,
+// chosenDeliveryType }. Looks up the matching cart line, swaps in the
+// new option's price as `purchasedTimeShippingCharges`, persists
+// `chosenDeliveryType`, and re-aggregates `totalShippingCharges`.
+exports.updateDeliveryOption = async (req, res) => {
+  try {
+    if (!req.body.userId || !req.body.productId || !req.body.chosenDeliveryType) {
+      return res.status(200).json({ status: false, message: "Oops! Invalid details." });
+    }
+
+    const userId = new mongoose.Types.ObjectId(req.body.userId);
+    const productId = new mongoose.Types.ObjectId(req.body.productId);
+    const requestedType = String(req.body.chosenDeliveryType).trim().toLowerCase();
+
+    const [product, cart] = await Promise.all([
+      Product.findById(productId),
+      Cart.findOne({ userId }),
+    ]);
+
+    if (!product) {
+      return res.status(200).json({ status: false, message: "Product not found!" });
+    }
+    if (!cart) {
+      return res.status(200).json({ status: false, message: "Cart not found!" });
+    }
+
+    // Match the cart line on productId + attributesArray (same key used
+    // by addToCart's merge logic so multi-variant items stay distinct).
+    const itemIndex = cart.items.findIndex(
+      (item) =>
+        item.productId &&
+        item.productId.toString() === product._id.toString() &&
+        (req.body.attributesArray === undefined ||
+          JSON.stringify(item.attributesArray) === JSON.stringify(req.body.attributesArray))
+    );
+
+    if (itemIndex === -1) {
+      return res.status(200).json({ status: false, message: "Cart item not found!" });
+    }
+
+    const ship = resolveCartShipping(product, requestedType);
+    cart.items[itemIndex].chosenDeliveryType = ship.type;
+    cart.items[itemIndex].purchasedTimeShippingCharges = ship.price;
+
+    // Re-aggregate totalShippingCharges using the same per-product dedupe
+    // the addToCart path uses (charges once per unique product even if
+    // there are multiple attribute variants).
+    const seenProductIds = new Set();
+    cart.totalShippingCharges = 0;
+    cart.items.forEach((val) => {
+      if (val?.productId && !seenProductIds.has(val.productId.toString())) {
+        seenProductIds.add(val.productId.toString());
+        cart.totalShippingCharges += val.purchasedTimeShippingCharges || 0;
+      }
+    });
+
+    await cart.save();
+
+    const data = await cart.populate({
+      path: "items.productId",
+      select: { productName: 1, mainImage: 1, _id: 1, shippingCharges: 1, deliveryType: 1, deliveryOptions: 1 },
+    });
+
+    return res.status(200).json({
+      status: true,
+      message: "Delivery option updated.",
+      data,
     });
   } catch (error) {
     console.log(error);

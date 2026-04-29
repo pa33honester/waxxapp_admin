@@ -15,6 +15,10 @@ route.patch("/removeProduct", checkAccessWithSecretKey(), CartController.removeF
 //get all products added to cart
 route.get("/getCartProduct", checkAccessWithSecretKey(), CartController.getCartProduct);
 
+// Shape B per-option shipping — buyer flips the chosen delivery option
+// from the cart UI without removing the item.
+route.patch("/updateDeliveryOption", checkAccessWithSecretKey(), CartController.updateDeliveryOption);
+
 //delete the cart of particular user
 route.delete("/deleteCart", checkAccessWithSecretKey(), CartController.deleteCart);
 

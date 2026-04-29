@@ -14,6 +14,10 @@ const Seller = require("../seller/seller.model");
 const Category = require("../category/category.model");
 const SubCategory = require("../subCategory/subCategory.model");
 
+// Shape B per-option shipping prices — shared parser used by both the
+// product and productRequest controllers.
+const { parseDeliveryOptions } = require("../../util/parseDeliveryOptions");
+
 // Mirrors the helper in product.controller.js — accepts the `promoCodes`
 // field from a multipart form (CSV string) or a JSON body (array). Drops
 // invalid ObjectIds and de-dupes. Empty/missing input → empty array.
@@ -134,6 +138,9 @@ exports.updateProductRequest = async (req, res) => {
         isImmediatePaymentRequired: req.body.isImmediatePaymentRequired === "true" || product.isImmediatePaymentRequired,
         shippingCharges: req.body.shippingCharges || product.shippingCharges,
         deliveryType: req.body.deliveryType || product.deliveryType,
+        deliveryOptions: req.body.deliveryOptions !== undefined
+          ? parseDeliveryOptions(req.body.deliveryOptions)
+          : (product.deliveryOptions || []),
         category,
         subCategory,
         seller: product.seller,
@@ -225,6 +232,9 @@ exports.updateProductRequest = async (req, res) => {
         minimumOfferPrice: req.body.minimumOfferPrice || product.minimumOfferPrice,
         shippingCharges: req.body.shippingCharges || product.shippingCharges,
         deliveryType: req.body.deliveryType || product.deliveryType,
+        deliveryOptions: req.body.deliveryOptions !== undefined
+          ? parseDeliveryOptions(req.body.deliveryOptions)
+          : (product.deliveryOptions || []),
         category,
         subCategory,
         promoCodes: req.body.promoCodes !== undefined
@@ -351,6 +361,7 @@ exports.acceptUpdateRequest = async (req, res) => {
       product.isImmediatePaymentRequired = updateRequest.isImmediatePaymentRequired;
       product.shippingCharges = updateRequest.shippingCharges;
       product.deliveryType = updateRequest.deliveryType;
+      product.deliveryOptions = updateRequest.deliveryOptions || [];
       product.seller = updateRequest.seller;
       product.category = updateRequest.category;
       product.subCategory = updateRequest.subCategory;

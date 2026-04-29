@@ -74,6 +74,10 @@ const parsePromoCodeIds = (raw) => {
   return out;
 };
 
+// Shape B per-option shipping prices live in a shared util so the
+// productRequest controller can use the same parser/validator.
+const { parseDeliveryOptions } = require("../../util/parseDeliveryOptions");
+
 const getValidToken = (token) => {
   if (typeof token !== "string") return null;
   const trimmedToken = token.trim();
@@ -263,6 +267,15 @@ exports.createProduct = async (req, res) => {
     product.shippingCharges = parseFloat(req.body.shippingCharges) || 0;
     // Optional delivery scope; null when seller skipped the picker.
     product.deliveryType = req.body.deliveryType || null;
+    // Shape B per-option prices. When the seller writes any options, also
+    // back-sync the legacy single fields off the first option so older
+    // buyer apps without the new picker still see one sensible cost.
+    const _opts = parseDeliveryOptions(req.body.deliveryOptions);
+    product.deliveryOptions = _opts;
+    if (_opts.length > 0) {
+      product.shippingCharges = _opts[0].price;
+      product.deliveryType = _opts[0].type;
+    }
     product.productCode = req.body.productCode;
     product.productSaleType = Number(req.body.productSaleType);
     product.attributes = attributes;
@@ -502,6 +515,7 @@ exports.createProductByAdmin = async (req, res) => {
       });
     }
 
+    const _adminOpts = parseDeliveryOptions(req.body.deliveryOptions);
     const product = new Product({
       productName: req.body.productName,
       description: req.body.description,
@@ -511,8 +525,11 @@ exports.createProductByAdmin = async (req, res) => {
       seller: seller._id,
       createStatus: "Approved",
       isAddByAdmin: true,
-      shippingCharges: parseFloat(req.body.shippingCharges) || 0,
-      deliveryType: req.body.deliveryType || null,
+      // Back-sync legacy single fields off the first option when Shape B
+      // options are present, so old buyer apps see one sensible cost.
+      shippingCharges: _adminOpts.length ? _adminOpts[0].price : (parseFloat(req.body.shippingCharges) || 0),
+      deliveryType: _adminOpts.length ? _adminOpts[0].type : (req.body.deliveryType || null),
+      deliveryOptions: _adminOpts,
       productCode: req.body.productCode,
       date: new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" }),
     });
@@ -649,6 +666,24 @@ exports.updateProduct = async (req, res) => {
     product.shippingCharges = req.body.shippingCharges || product.shippingCharges;
     // Preserve-on-empty: omitting deliveryType on edit doesn't wipe a saved value.
     product.deliveryType = req.body.deliveryType || product.deliveryType;
+    // Shape B per-option prices on edit. Preserve-on-empty: a missing /
+    // empty `deliveryOptions` field on the multipart body keeps whatever
+    // was saved before. When the seller submits options, also back-sync
+    // the legacy single fields off the first one so the live shippingCharges
+    // value (which old buyer apps still read) reflects the seller's intent.
+    if (req.body.deliveryOptions !== undefined) {
+      const _editOpts = parseDeliveryOptions(req.body.deliveryOptions);
+      if (_editOpts.length > 0) {
+        product.deliveryOptions = _editOpts;
+        product.shippingCharges = _editOpts[0].price;
+        product.deliveryType = _editOpts[0].type;
+      } else if (typeof req.body.deliveryOptions === "string" && req.body.deliveryOptions.trim() === "[]") {
+        // Explicit clear — seller deleted all options. Empty the array
+        // but leave the legacy fields alone so checkout keeps working
+        // off the old single-cost path.
+        product.deliveryOptions = [];
+      }
+    }
     product.category = category ? category._id : product.category;
     product.subCategory = subCategory ? subCategory._id : product.subCategory;
     if (req.body.promoCodes !== undefined) {

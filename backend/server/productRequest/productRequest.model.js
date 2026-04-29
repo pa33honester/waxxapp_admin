@@ -14,6 +14,17 @@ const productRequestSchema = new mongoose.Schema(
     // Mirror of Product.deliveryType so admin-approval edits carry the
     // value through to the live product on accept.
     deliveryType: { type: String, enum: ["local", "nationwide", "international", null], default: null },
+    // Mirror of Product.deliveryOptions (Shape B per-option shipping).
+    deliveryOptions: {
+      type: [
+        {
+          type: { type: String, enum: ["local", "nationwide", "international"], required: true },
+          price: { type: Number, default: 0 },
+          _id: false,
+        },
+      ],
+      default: [],
+    },
 
     enableAuction: { type: Boolean, default: false },
     scheduleTime: { type: Date, default: Date.now },

@@ -12,6 +12,11 @@ const orderSchema = new mongoose.Schema(
 
         purchasedTimeProductPrice: { type: Number, default: 0 },
         purchasedTimeShippingCharges: { type: Number, default: 0 },
+        // Shape B: which delivery option the buyer picked at checkout
+        // (mirrors the cart line). Null/undefined for legacy orders that
+        // were placed before this field existed or for products with no
+        // `deliveryOptions[]` configured (the legacy single-cost path).
+        chosenDeliveryType: { type: String, enum: ["local", "nationwide", "international", null], default: null },
         productCode: { type: String },
         productQuantity: { type: Number, default: 0 },
         attributesArray: { type: Array, default: [] },

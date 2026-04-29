@@ -9,6 +9,13 @@ const cartSchema = new mongoose.Schema(
         sellerId: { type: mongoose.Schema.Types.ObjectId, ref: "Seller" },
         purchasedTimeProductPrice: { type: Number, default: 0 },
         purchasedTimeShippingCharges: { type: Number, default: 0 },
+        // Shape B: which delivery option the buyer picked from the
+        // product's `deliveryOptions[]`. `purchasedTimeShippingCharges`
+        // is set to that option's price so totals stay self-contained
+        // even if the seller later edits the product. Null/undefined
+        // for legacy products that only have the single shippingCharges
+        // + deliveryType pair (the cart total path uses those instead).
+        chosenDeliveryType: { type: String, enum: ["local", "nationwide", "international", null], default: null },
         productCode: { type: String },
         productQuantity: { type: Number, default: 0 },
         attributesArray: { type: Array, default: [] },

@@ -177,6 +177,11 @@ exports.createOrder = async (req, res) => {
 
         return {
           ...item,
+          // Mirror the cart line's Shape B chosen delivery option onto
+          // the order item explicitly so it survives any subdoc-spread
+          // edge cases (Mongoose subdocs only spread schema-defined
+          // enumerable own props — explicit copy keeps it bulletproof).
+          chosenDeliveryType: item.chosenDeliveryType ?? null,
           itemDiscount: itemDiscount,
           commissionPerProductQuantity: commissionPerProductQuantity,
           status: "Pending",
