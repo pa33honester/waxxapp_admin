@@ -204,14 +204,17 @@ io.on("connect", async (socket) => {
 
     io.in("liveSellerRoom:" + dataOfaddView.liveSellingHistoryId).emit("addView", liveSellingView.length);
 
-    // Send the running like total straight to the joiner so late entrants
-    // don't see a stale "0" until the next tap. Targeted emit (not the
-    // whole room) — existing viewers already have the latest count.
+    // Send the running like + share totals straight to the joiner so late
+    // entrants don't see a stale "0" until the next tap. Targeted emit
+    // (not the whole room) — existing viewers already have both counts.
     try {
-      const lh = await LiveSellingHistory.findById(dataOfaddView.liveSellingHistoryId).select("likeCount");
+      const lh = await LiveSellingHistory.findById(dataOfaddView.liveSellingHistoryId).select(
+        "likeCount shareCount"
+      );
       socket.emit("liveLikeCount", lh?.likeCount ?? 0);
+      socket.emit("liveShareCount", lh?.shareCount ?? 0);
     } catch (err) {
-      console.error("addView likeCount seed error:", err.message);
+      console.error("addView likeCount/shareCount seed error:", err.message);
     }
   });
 
@@ -317,6 +320,32 @@ io.on("connect", async (socket) => {
       io.in(room).emit("liveLikeCount", total);
     } catch (err) {
       console.error("liveLike socket error:", err.message);
+    }
+  });
+
+  // Anyone (host or buyer) shares the live. Bump the running count on
+  // LiveSellingHistory and rebroadcast the new total to the room so every
+  // open client — including the host's own seller dashboard — stays in
+  // sync. Same shape as `liveLike`.
+  socket.on("liveShare", async (data) => {
+    try {
+      const parsed = typeof data === "string" ? JSON.parse(data) : data;
+      const liveSellingHistoryId = parsed?.liveSellingHistoryId;
+      if (!liveSellingHistoryId) return;
+
+      const room = "liveSellerRoom:" + liveSellingHistoryId;
+      if (!socket.rooms.has(room)) socket.join(room);
+
+      const updated = await LiveSellingHistory.findByIdAndUpdate(
+        liveSellingHistoryId,
+        { $inc: { shareCount: 1 } },
+        { new: true, projection: { shareCount: 1 } }
+      );
+      const total = updated?.shareCount ?? 0;
+
+      io.in(room).emit("liveShareCount", total);
+    } catch (err) {
+      console.error("liveShare socket error:", err.message);
     }
   });
 

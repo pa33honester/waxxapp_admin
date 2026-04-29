@@ -437,6 +437,8 @@ exports.getliveSellerList = async (req, res) => {
                 ],
               },
             },
+            // Fake sellers can't be followed — always false.
+            isFollow: false,
           },
         },
       ]),
@@ -464,6 +466,33 @@ exports.getliveSellerList = async (req, res) => {
           },
         },
         { $unwind: { path: "$liveseller", preserveNullAndEmptyArrays: false } },
+        // Per-viewer follow flag — gated on userId so the live grid /
+        // home rail / live-by-id deep link can render the FollowPill in
+        // its real state instead of always defaulting to "Follow".
+        ...(userId
+          ? [
+              {
+                $lookup: {
+                  from: "followers",
+                  let: { sellerId: "$_id" },
+                  pipeline: [
+                    {
+                      $match: {
+                        $expr: {
+                          $and: [
+                            { $eq: ["$sellerId", "$$sellerId"] },
+                            { $eq: ["$userId", userId] },
+                          ],
+                        },
+                      },
+                    },
+                    { $limit: 1 },
+                  ],
+                  as: "followerLookup",
+                },
+              },
+            ]
+          : []),
         {
           $project: {
             _id: 1,
@@ -487,6 +516,9 @@ exports.getliveSellerList = async (req, res) => {
             // liveType used to be silently dropped here — the Flutter
             // LivePageView reads it to decide auction-mode behaviour.
             liveType: "$liveseller.liveType",
+            isFollow: userId
+              ? { $cond: [{ $eq: [{ $size: { $ifNull: ["$followerLookup", []] } }, 0] }, false, true] }
+              : false,
           },
         },
       ]),
@@ -523,6 +555,13 @@ exports.getLiveByHistoryId = async (req, res) => {
     }
 
     const objectId = new mongoose.Types.ObjectId(liveSellingHistoryId);
+    // Optional viewer userId — when present, project a per-viewer
+    // `isFollow` so the deep-link path renders the FollowPill in its
+    // real state instead of always defaulting to "Follow".
+    const userId =
+      req.query.userId && mongoose.Types.ObjectId.isValid(req.query.userId)
+        ? new mongoose.Types.ObjectId(req.query.userId)
+        : null;
 
     const result = await LiveSeller.aggregate([
       { $match: { liveSellingHistoryId: objectId } },
@@ -544,6 +583,30 @@ exports.getLiveByHistoryId = async (req, res) => {
         },
       },
       { $unwind: { path: "$liveHistory", preserveNullAndEmptyArrays: true } },
+      ...(userId
+        ? [
+            {
+              $lookup: {
+                from: "followers",
+                let: { sellerId: "$sellerId" },
+                pipeline: [
+                  {
+                    $match: {
+                      $expr: {
+                        $and: [
+                          { $eq: ["$sellerId", "$$sellerId"] },
+                          { $eq: ["$userId", userId] },
+                        ],
+                      },
+                    },
+                  },
+                  { $limit: 1 },
+                ],
+                as: "followerLookup",
+              },
+            },
+          ]
+        : []),
       {
         $project: {
           _id: "$seller._id",
@@ -563,6 +626,10 @@ exports.getLiveByHistoryId = async (req, res) => {
           liveType: "$liveType",
           sellerId: "$sellerId",
           likeCount: { $ifNull: ["$liveHistory.likeCount", 0] },
+          shareCount: { $ifNull: ["$liveHistory.shareCount", 0] },
+          isFollow: userId
+            ? { $cond: [{ $eq: [{ $size: { $ifNull: ["$followerLookup", []] } }, 0] }, false, true] }
+            : false,
         },
       },
     ]);
