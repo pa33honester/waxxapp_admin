@@ -5,6 +5,7 @@ const LiveSeller = require("./server/liveSeller/liveSeller.model");
 const LiveSellingHistory = require("./server/liveSellingHistory/liveSellingHistory.model");
 const LiveSellingView = require("./server/liveSellingView/liveSellingView.model");
 const LiveChat = require("./server/liveChat/liveChat.model");
+const Follower = require("./server/follower/follower.model");
 
 //momemt
 const moment = require("moment-timezone");
@@ -87,7 +88,7 @@ io.on("connect", async (socket) => {
   socket.on("fetchLiveBroadcastDetails", async (payload) => {
     try {
       const parsedPayload = JSON.parse(payload);
-      const { liveHistoryId, liveUserObjId } = parsedPayload;
+      const { liveHistoryId, liveUserObjId, userId } = parsedPayload;
 
       console.log("Data received in fetchLiveBroadcastDetails:", parsedPayload);
 
@@ -104,6 +105,20 @@ io.on("connect", async (socket) => {
         console.warn("No live user info found for given IDs.");
         targetSocket.emit("liveSessionInfo", "The live stream has ended. Disconnecting...");
         return;
+      }
+
+      // Per-viewer follow flag — gated on userId being a valid id, so the
+      // FollowPill on the live page renders in its real state instead of
+      // always defaulting to "Follow". The HTTP endpoints already project
+      // this; the socket fetch is the path the live page actually uses on
+      // entry, so it needs to project it too.
+      let isFollow = false;
+      if (userId && mongoose.Types.ObjectId.isValid(userId)) {
+        const follower = await Follower.findOne({
+          userId: new mongoose.Types.ObjectId(userId),
+          sellerId: liveUserInfo.sellerId,
+        }).lean();
+        isFollow = !!follower;
       }
 
       const productsWithRemainingTime = liveUserInfo.selectedProducts
@@ -129,6 +144,7 @@ io.on("connect", async (socket) => {
         currentHighestBid,
         currentHighestBidder,
         totalRemainingTime,
+        isFollow,
       };
 
       if (targetSocket) {
