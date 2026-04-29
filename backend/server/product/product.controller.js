@@ -826,10 +826,30 @@ exports.detailforSeller = async (req, res) => {
       },
     ]);
 
+    // Aggregate the per-product rating summary (avgRating + totalUser)
+    // so the seller's product-detail screen can show the same star-row
+    // the buyer side already renders. Mirrors the lookup in productDetail.
+    const ratingAgg = await Rating.aggregate([
+      { $match: { productId: product._id } },
+      {
+        $group: {
+          _id: "$productId",
+          totalUser: { $sum: 1 },
+          avgRating: { $avg: "$rating" },
+        },
+      },
+    ]);
+
+    const enriched = productData.map((p) => {
+      const obj = p.toObject();
+      obj.rating = ratingAgg;
+      return obj;
+    });
+
     return res.status(200).json({
       status: true,
       message: "Retrive product details for the seller!",
-      product: productData,
+      product: enriched,
     });
   } catch (error) {
     console.log(error);
