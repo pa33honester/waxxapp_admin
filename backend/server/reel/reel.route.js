@@ -49,4 +49,8 @@ route.post("/likeOrDislikeOfReel", checkAccessWithSecretKey(), ReelController.li
 // reel-becomes-visible event in the swipe feed)
 route.post("/incrementView/:reelId", checkAccessWithSecretKey(), ReelController.incrementView);
 
+// Share tap on a reel — append-only counter, no per-user dedupe so
+// every tap bumps the total. Mirrors the live-stream share path.
+route.post("/incrementShare/:reelId", checkAccessWithSecretKey(), ReelController.incrementShare);
+
 module.exports = route;

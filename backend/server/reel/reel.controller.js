@@ -598,6 +598,7 @@ exports.getReelsForUser = async (req, res) => {
           sellerId: 1,
           like: 1,
           view: { $ifNull: ["$view", 0] },
+          share: { $ifNull: ["$share", 0] },
           isFake: 1,
           description: 1,
           createdAt: 1,
@@ -706,6 +707,38 @@ exports.incrementView = async (req, res) => {
     });
   } catch (error) {
     console.error("incrementView error:", error);
+    return res.status(500).json({ status: false, message: error.message || "Internal Server Error" });
+  }
+};
+
+// Bump the running share count on a reel. Unlike incrementView there's
+// no per-user dedupe — every tap counts, mirroring how live-stream
+// shareCount works. Returns the new total so the Flutter side can
+// update its local mirror without a follow-up fetch.
+exports.incrementShare = async (req, res) => {
+  try {
+    const { reelId } = req.params;
+
+    if (!reelId || !mongoose.Types.ObjectId.isValid(reelId)) {
+      return res.status(200).json({ status: false, message: "Invalid reelId." });
+    }
+
+    const updated = await Reel.findByIdAndUpdate(
+      reelId,
+      { $inc: { share: 1 } },
+      { new: true, projection: { share: 1 } }
+    );
+    if (!updated) {
+      return res.status(200).json({ status: false, message: "Reel not found." });
+    }
+
+    return res.status(200).json({
+      status: true,
+      message: "Share counted.",
+      share: updated.share ?? 0,
+    });
+  } catch (error) {
+    console.error("incrementShare error:", error);
     return res.status(500).json({ status: false, message: error.message || "Internal Server Error" });
   }
 };

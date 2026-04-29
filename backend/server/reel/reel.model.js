@@ -17,6 +17,12 @@ const ReelSchema = new mongoose.Schema(
     duration: { type: Number, default: 0 },
     like: { type: Number, default: 0 },
     view: { type: Number, default: 0 },
+    // Running count of how many times the reel has been shared via the
+    // in-app Share button. Bumped by POST /reel/incrementShare/:reelId
+    // (no per-user dedupe — every share counts, mirroring the existing
+    // live-stream shareCount behavior). Surfaced on the home reels and
+    // seller-profile reels viewers next to the like/view counts.
+    share: { type: Number, default: 0 },
 
     isFake: { type: Boolean, default: false },
   },
