@@ -16,6 +16,12 @@ const NotificationController = require("./notification.controller");
 //get notification list
 route.get("/list", checkAccessWithSecretKey(), NotificationController.getNotificationList);
 
+// Single-row delete (swipe / trash icon). Path: /:notificationId?userId=
+route.delete("/:notificationId", checkAccessWithSecretKey(), NotificationController.deleteNotification);
+
+// Bulk delete — wipes every notification owned by the caller.
+route.delete("/", checkAccessWithSecretKey(), NotificationController.clearAllNotifications);
+
 //send notifications sellers or users or both
 route.post("/send", checkAccessWithSecretKey(), upload.single("image"), NotificationController.sendNotifications);
 

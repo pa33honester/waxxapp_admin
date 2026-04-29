@@ -11,6 +11,59 @@ var config = require("../../config");
 //private key
 const admin = require("../../util/privateKey");
 
+// Delete a single notification owned by the requesting user. The
+// `userId` ownership check is the auth boundary — anyone can know a
+// notification id, so we only delete when the row's userId matches the
+// caller's userId. Returns true when one row was actually removed (the
+// Flutter side already optimistically dropped the row and uses the
+// status to decide whether to put it back on failure).
+exports.deleteNotification = async (req, res) => {
+  try {
+    const { notificationId } = req.params;
+    const { userId } = req.query;
+    if (!notificationId || !userId) {
+      return res.status(200).json({ status: false, message: "notificationId and userId are required." });
+    }
+
+    const result = await Notification.deleteOne({ _id: notificationId, userId });
+    if (result.deletedCount === 0) {
+      return res.status(200).json({ status: false, message: "Notification not found or not yours." });
+    }
+
+    return res.status(200).json({ status: true, message: "Notification deleted." });
+  } catch (error) {
+    console.log("deleteNotification error:", error);
+    return res.status(500).json({
+      status: false,
+      error: error.message || "Internal Server Error",
+    });
+  }
+};
+
+// Wipe every notification belonging to the requesting user. Used by
+// the "Clear all" affordance in the Flutter notifications screen.
+exports.clearAllNotifications = async (req, res) => {
+  try {
+    const { userId } = req.query;
+    if (!userId) {
+      return res.status(200).json({ status: false, message: "userId is required." });
+    }
+
+    const result = await Notification.deleteMany({ userId });
+    return res.status(200).json({
+      status: true,
+      message: "All notifications cleared.",
+      deletedCount: result.deletedCount,
+    });
+  } catch (error) {
+    console.log("clearAllNotifications error:", error);
+    return res.status(500).json({
+      status: false,
+      error: error.message || "Internal Server Error",
+    });
+  }
+};
+
 //get notification list
 exports.getNotificationList = async (req, res) => {
   try {
