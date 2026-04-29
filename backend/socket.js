@@ -339,6 +339,37 @@ io.on("connect", async (socket) => {
     }
   });
 
+  // Buyer toggles the heart off — decrement the running like total and
+  // rebroadcast. Clamped at zero via a conditional update so a stray
+  // unlike from a client whose local mirror drifted ahead of the server
+  // can't pull the persisted total negative.
+  socket.on("liveUnlike", async (data) => {
+    try {
+      const parsed = typeof data === "string" ? JSON.parse(data) : data;
+      const liveSellingHistoryId = parsed?.liveSellingHistoryId;
+      if (!liveSellingHistoryId) return;
+
+      const room = "liveSellerRoom:" + liveSellingHistoryId;
+      if (!socket.rooms.has(room)) socket.join(room);
+
+      const updated = await LiveSellingHistory.findOneAndUpdate(
+        { _id: liveSellingHistoryId, likeCount: { $gt: 0 } },
+        { $inc: { likeCount: -1 } },
+        { new: true, projection: { likeCount: 1 } }
+      );
+      // If the conditional matched nothing (likeCount was already 0),
+      // re-read so the broadcast still carries the authoritative total.
+      const total =
+        updated?.likeCount ??
+        (await LiveSellingHistory.findById(liveSellingHistoryId, { likeCount: 1 }))?.likeCount ??
+        0;
+
+      io.in(room).emit("liveLikeCount", total);
+    } catch (err) {
+      console.error("liveUnlike socket error:", err.message);
+    }
+  });
+
   // Anyone (host or buyer) shares the live. Bump the running count on
   // LiveSellingHistory and rebroadcast the new total to the room so every
   // open client — including the host's own seller dashboard — stays in
