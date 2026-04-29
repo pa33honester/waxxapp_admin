@@ -204,6 +204,17 @@ io.on("connect", async (socket) => {
         await liveSellingView.save();
 
         console.log("new liveSellingView in user and liveSeller (addView): ", liveSellingView);
+
+        // First-time entry — emit a Whatnot-style "X joined" system row to
+        // the room. Already gated by the LiveSellingView upsert above so a
+        // tab refresh / Zego retry / network blip doesn't spam the chat
+        // (subsequent re-entries hit the existLiveSellingView path and skip).
+        emitLiveSystemMessage({
+          liveSellingHistoryId: dataOfaddView.liveSellingHistoryId,
+          systemType: "JOIN",
+          userName: user.firstName || "Someone",
+          text: "joined",
+        });
       }
     }
 
