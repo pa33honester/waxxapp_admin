@@ -1120,8 +1120,24 @@ exports.productDetail = async (req, res) => {
       {
         $lookup: {
           from: "followers",
-          let: { sellerId: seller._id },
-          pipeline: [{ $match: { $expr: { $eq: ["$sellerId", "$$sellerId"] } } }],
+          let: { sellerId: seller._id, viewerId: user._id },
+          // Per-viewer filter — without the userId guard this returns
+          // `true` whenever ANY user follows this seller, so every
+          // buyer ended up seeing "Following" on a popular seller's
+          // product page even though they hadn't followed.
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $and: [
+                    { $eq: ["$sellerId", "$$sellerId"] },
+                    { $eq: ["$userId", "$$viewerId"] },
+                  ],
+                },
+              },
+            },
+            { $limit: 1 },
+          ],
           as: "isFollow",
         },
       },
@@ -1129,6 +1145,9 @@ exports.productDetail = async (req, res) => {
         $lookup: {
           from: "followers",
           let: { sellerId: seller._id },
+          // Followers count stays room-wide (no userId filter) — that's
+          // the total number of followers shown on the "About this seller"
+          // row, not a per-viewer flag.
           pipeline: [{ $match: { $expr: { $eq: ["$sellerId", "$$sellerId"] } } }, { $count: "count" }],
           as: "followerCountArr",
         },
