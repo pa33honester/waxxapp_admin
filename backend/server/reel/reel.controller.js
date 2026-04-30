@@ -755,18 +755,70 @@ exports.reelsOfSeller = async (req, res) => {
     const start = Math.max(1, parseInt(req.query.start) || 1);
     const limit = Math.max(1, parseInt(req.query.limit) || 20);
 
-    const reel = await Reel.find({ sellerId: req.query.sellerId })
-      .populate([
-        { path: "sellerId", select: "firstName lastName businessTag businessName" },
-        { path: "productId", select: "productName productCode price shippingCharges mainImage seller createStatus attributes description" },
-      ])
-      .sort({ createdAt: -1 })
-      .skip((start - 1) * limit)
-      .limit(limit);
+    const sellerObjectId = new mongoose.Types.ObjectId(req.query.sellerId);
 
-    if (!reel) {
-      return res.status(200).json({ satus: false, message: "reel does not found for that seller!" });
-    }
+    // Per-viewer isLike flag — same pattern as getReelsForUser. The
+    // seller-profile FullScreenReelView reads this to seed the heart
+    // icon so the user's previously-liked reels render filled instead
+    // of always defaulting to false. Anonymous viewers (no userId in
+    // query) skip the lookup and always see isLike: false.
+    const viewerId =
+      req.query.userId && mongoose.Types.ObjectId.isValid(req.query.userId)
+        ? new mongoose.Types.ObjectId(req.query.userId)
+        : null;
+
+    const reel = await Reel.aggregate([
+      { $match: { sellerId: sellerObjectId } },
+      { $sort: { createdAt: -1 } },
+      { $skip: (start - 1) * limit },
+      { $limit: limit },
+      {
+        $lookup: {
+          from: "sellers",
+          localField: "sellerId",
+          foreignField: "_id",
+          as: "sellerId",
+          pipeline: [{ $project: { firstName: 1, lastName: 1, businessTag: 1, businessName: 1 } }],
+        },
+      },
+      { $unwind: { path: "$sellerId", preserveNullAndEmptyArrays: true } },
+      {
+        $lookup: {
+          from: "products",
+          localField: "productId",
+          foreignField: "_id",
+          as: "productId",
+          pipeline: [{ $project: { productName: 1, productCode: 1, price: 1, shippingCharges: 1, deliveryType: 1, deliveryOptions: 1, mainImage: 1, seller: 1, createStatus: 1, attributes: 1, description: 1 } }],
+        },
+      },
+      {
+        $lookup: {
+          from: "likehistoryofreels",
+          let: { reelId: "$_id" },
+          pipeline: viewerId
+            ? [
+                {
+                  $match: {
+                    $expr: {
+                      $and: [{ $eq: ["$reelId", "$$reelId"] }, { $eq: ["$userId", viewerId] }],
+                    },
+                  },
+                },
+                { $limit: 1 },
+              ]
+            : [{ $match: { $expr: { $eq: [1, 0] } } }],
+          as: "likeHistoryofReel",
+        },
+      },
+      {
+        $addFields: {
+          isLike: { $cond: [{ $eq: [{ $size: "$likeHistoryofReel" }, 0] }, false, true] },
+          view: { $ifNull: ["$view", 0] },
+          share: { $ifNull: ["$share", 0] },
+        },
+      },
+      { $project: { likeHistoryofReel: 0 } },
+    ]);
 
     return res.status(200).json({
       status: true,
