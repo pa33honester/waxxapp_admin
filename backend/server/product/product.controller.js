@@ -840,9 +840,69 @@ exports.detailforSeller = async (req, res) => {
       },
     ]);
 
+    // When a seller edits a product the change goes through admin review
+    // (productRequest/updateProductRequest). Until the admin accepts, the
+    // live Product is unchanged — so the seller re-opening their own
+    // detail page after submit saw the pre-edit values and concluded the
+    // edit had been lost. Surface the latest pending ProductRequest's
+    // fields here instead so the seller's edit form + summary reflect
+    // their submitted values immediately, with hasPendingReview as a
+    // hook for the UI to render a "Pending review" banner. Buyers still
+    // hit productDetail (no overlay), so they keep seeing the live
+    // approved product until the admin accepts.
+    const pendingRequest = await ProductRequest.findOne({
+      productCode: product.productCode,
+      seller: seller._id,
+      updateStatus: "Pending",
+    })
+      .sort({ createdAt: -1 })
+      .populate([
+        { path: "category", select: "name" },
+        { path: "subCategory", select: "name" },
+      ])
+      .lean();
+
     const enriched = productData.map((p) => {
       const obj = p.toObject();
       obj.rating = ratingAgg;
+      obj.hasPendingReview = false;
+      if (pendingRequest) {
+        const overlayKeys = [
+          "productName",
+          "description",
+          "price",
+          "productSaleType",
+          "allowOffer",
+          "minimumOfferPrice",
+          "shippingCharges",
+          "deliveryType",
+          "deliveryOptions",
+          "promoCodes",
+          "processingTime",
+          "recipientAddress",
+          "isImmediatePaymentRequired",
+          "attributes",
+          "mainImage",
+          "images",
+          "category",
+          "subCategory",
+          "enableAuction",
+          "scheduleTime",
+          "auctionStartingPrice",
+          "enableReservePrice",
+          "reservePrice",
+          "auctionDuration",
+          "auctionStartDate",
+          "auctionEndDate",
+        ];
+        for (const k of overlayKeys) {
+          if (pendingRequest[k] !== undefined && pendingRequest[k] !== null) {
+            obj[k] = pendingRequest[k];
+          }
+        }
+        obj.hasPendingReview = true;
+        obj.pendingReviewSubmittedAt = pendingRequest.createdAt;
+      }
       return obj;
     });
 
