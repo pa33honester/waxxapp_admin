@@ -189,32 +189,54 @@ io.on("connect", async (socket) => {
     const liveSeller = await LiveSeller.findOne({ liveSellingHistoryId: dataOfaddView.liveSellingHistoryId });
 
     if (user && liveSeller) {
-      const existLiveSellingView = await LiveSellingView.findOne({
-        userId: dataOfaddView.userId,
-        liveSellingHistoryId: dataOfaddView.liveSellingHistoryId,
-      });
-      console.log("existLiveSellingView in user and liveSeller (addView):  ", existLiveSellingView);
+      // Atomic upsert — `findOne` + `new` + `save` had a race where two
+      // back-to-back addView emits (LiveSwipeView mount/unmount churn,
+      // Zego reconnect, app cold-start retries) both saw "no existing
+      // row" before either save flushed, both inserted, and both fired a
+      // duplicate "<name> joined" system message. The compound unique
+      // index on the LiveSellingView model makes the second insert
+      // bounce server-side; here we use the upsert's rawResult to know
+      // whether the call ACTUALLY inserted (versus matched an existing
+      // row), and only emit JOIN on the real-insert case.
+      try {
+        const upsertResult = await LiveSellingView.updateOne(
+          {
+            userId: dataOfaddView.userId,
+            liveSellingHistoryId: dataOfaddView.liveSellingHistoryId,
+          },
+          {
+            $setOnInsert: {
+              userId: dataOfaddView.userId,
+              liveSellingHistoryId: dataOfaddView.liveSellingHistoryId,
+              name: user.firstName,
+              image: user.image,
+            },
+          },
+          { upsert: true }
+        );
 
-      if (!existLiveSellingView) {
-        const liveSellingView = new LiveSellingView();
-        liveSellingView.userId = dataOfaddView.userId;
-        liveSellingView.liveSellingHistoryId = dataOfaddView.liveSellingHistoryId;
-        liveSellingView.name = user.firstName;
-        liveSellingView.image = user.image;
-        await liveSellingView.save();
+        const wasFirstEntry = (upsertResult.upsertedCount ?? 0) > 0;
+        console.log("addView upsert wasFirstEntry: ", wasFirstEntry);
 
-        console.log("new liveSellingView in user and liveSeller (addView): ", liveSellingView);
-
-        // First-time entry — emit a Whatnot-style "X joined" system row to
-        // the room. Already gated by the LiveSellingView upsert above so a
-        // tab refresh / Zego retry / network blip doesn't spam the chat
-        // (subsequent re-entries hit the existLiveSellingView path and skip).
-        emitLiveSystemMessage({
-          liveSellingHistoryId: dataOfaddView.liveSellingHistoryId,
-          systemType: "JOIN",
-          userName: user.firstName || "Someone",
-          text: "joined",
-        });
+        if (wasFirstEntry) {
+          emitLiveSystemMessage({
+            liveSellingHistoryId: dataOfaddView.liveSellingHistoryId,
+            systemType: "JOIN",
+            userName: user.firstName || "Someone",
+            text: "joined",
+          });
+        }
+      } catch (err) {
+        // Duplicate-key from the unique index race is the EXPECTED
+        // outcome of two concurrent addView calls — the second loses the
+        // race but the user is now correctly recorded once and the JOIN
+        // chip already fired from the winner. Swallow only that one
+        // error code so we don't lose other failures.
+        if (err && err.code === 11000) {
+          console.log("addView duplicate-key (concurrent join) — skipping JOIN re-emit");
+        } else {
+          console.error("addView LiveSellingView upsert error:", err.message);
+        }
       }
     }
 
