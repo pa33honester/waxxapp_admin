@@ -340,11 +340,32 @@ io.on("connect", async (socket) => {
       const updated = await LiveSellingHistory.findByIdAndUpdate(
         liveSellingHistoryId,
         { $inc: { likeCount: 1 } },
-        { new: true, projection: { likeCount: 1 } }
+        { new: true, projection: { likeCount: 1, sellerId: 1 } }
       );
       const total = updated?.likeCount ?? 0;
 
       io.in(room).emit("liveLikeCount", total);
+
+      // Defensive double-broadcast to the host's personal liveRoom. The
+      // host's socket SHOULD already be in `liveSellerRoom:<id>` via
+      // `liveRoomConnect`, but that handler runs inside the Zego
+      // loginRoom callback and the room-leave loop has bitten us before
+      // (the host sees buyer counts climb on the buyer side but their
+      // own count stays put). The seller's `liveRoom:<userId>` room is
+      // joined on socket connect from the handshake query and never
+      // mutated, so emitting there guarantees the host receives the
+      // update even if the room-join handshake is flaky.
+      try {
+        if (updated?.sellerId) {
+          const seller = await Seller.findById(updated.sellerId).select("userId").lean();
+          const sellerUserId = seller?.userId?.toString();
+          if (sellerUserId) {
+            io.in("liveRoom:" + sellerUserId).emit("liveLikeCount", total);
+          }
+        }
+      } catch (innerErr) {
+        console.error("liveLike host-fallback error:", innerErr.message);
+      }
     } catch (err) {
       console.error("liveLike socket error:", err.message);
     }
@@ -397,11 +418,26 @@ io.on("connect", async (socket) => {
       const updated = await LiveSellingHistory.findByIdAndUpdate(
         liveSellingHistoryId,
         { $inc: { shareCount: 1 } },
-        { new: true, projection: { shareCount: 1 } }
+        { new: true, projection: { shareCount: 1, sellerId: 1 } }
       );
       const total = updated?.shareCount ?? 0;
 
       io.in(room).emit("liveShareCount", total);
+
+      // Same host-fallback as liveLike — broadcast to the seller's
+      // personal liveRoom so the host's count syncs even if their
+      // socket isn't (yet) in `liveSellerRoom:<id>`.
+      try {
+        if (updated?.sellerId) {
+          const seller = await Seller.findById(updated.sellerId).select("userId").lean();
+          const sellerUserId = seller?.userId?.toString();
+          if (sellerUserId) {
+            io.in("liveRoom:" + sellerUserId).emit("liveShareCount", total);
+          }
+        }
+      } catch (innerErr) {
+        console.error("liveShare host-fallback error:", innerErr.message);
+      }
     } catch (err) {
       console.error("liveShare socket error:", err.message);
     }
