@@ -83,6 +83,12 @@ const orderSchema = new mongoose.Schema(
 
     paymentStatus: { type: Number, default: 1, enum: [1, 2] }, //1.pending (Cash On Delivery) 2.paid ()
     paymentGateway: { type: String, trim: true, default: "" },
+    // Gateway-side transaction reference (Paystack `reference`,
+    // Razorpay `payment_id`, etc.) so the webhook handler can find the
+    // order on a `charge.success` event when the client never circled
+    // back to confirm. Indexed below so lookup is O(log n) on every
+    // webhook hit.
+    paymentReference: { type: String, default: "", trim: true, index: true },
   },
   {
     timestamps: true,

@@ -203,6 +203,11 @@ exports.createOrder = async (req, res) => {
         orderId,
         paymentStatus,
         paymentGateway,
+        // Snapshot the gateway-side reference so the webhook handler
+        // can find this order on a delayed `charge.success` event when
+        // the client never circled back. Optional — empty for COD or
+        // older clients that don't send the field.
+        paymentReference: (req.body && req.body.paymentReference) || (req.query && req.query.paymentReference) || "",
         promoCode: req.body.promoCode
           ? {
               promoCode: promoCodeData?.promoCode,
