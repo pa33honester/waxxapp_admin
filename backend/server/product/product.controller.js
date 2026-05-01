@@ -1354,6 +1354,13 @@ exports.productDetail = async (req, res) => {
           images: 1,
           price: 1,
           shippingCharges: 1,
+          // Surface the per-scope shipping breakdown so the buyer's
+          // Product Detail can display all offered options (Local /
+          // Nationwide / International) before they add to cart. The
+          // legacy deliveryType label (back-synced from the first
+          // option) keeps working for older client builds.
+          deliveryType: 1,
+          deliveryOptions: 1,
           productName: 1,
           productCode: 1,
           attributes: 1,
