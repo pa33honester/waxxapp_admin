@@ -465,6 +465,49 @@ io.on("connect", async (socket) => {
     }
   });
 
+  // ========= Customer-support chat rooms =========
+  // The buyer's app emits `supportJoin` when entering the support
+  // chat view; admins emit `supportAdminJoin` when opening a specific
+  // ticket. Both join the same `supportRoom:<conversationId>`, so the
+  // server's broadcast in support.controller.js reaches both sides.
+  // The admin React panel's Support Inbox emits `supportInboxJoin`
+  // to subscribe to inbox-wide updates (new ticket, unread count
+  // changes) so the listing updates without polling.
+  socket.on("supportJoin", (data) => {
+    try {
+      const parsed = typeof data === "string" ? JSON.parse(data) : data;
+      const conversationId = parsed?.conversationId;
+      if (!conversationId) return;
+      const room = "supportRoom:" + conversationId;
+      if (!socket.rooms.has(room)) socket.join(room);
+      console.log(`[supportJoin] socket ${socket.id} joined ${room}`);
+    } catch (err) {
+      console.error("supportJoin error:", err.message);
+    }
+  });
+
+  socket.on("supportLeave", (data) => {
+    try {
+      const parsed = typeof data === "string" ? JSON.parse(data) : data;
+      const conversationId = parsed?.conversationId;
+      if (!conversationId) return;
+      const room = "supportRoom:" + conversationId;
+      if (socket.rooms.has(room)) socket.leave(room);
+    } catch (err) {
+      console.error("supportLeave error:", err.message);
+    }
+  });
+
+  socket.on("supportInboxJoin", () => {
+    if (!socket.rooms.has("supportInbox")) socket.join("supportInbox");
+    console.log(`[supportInboxJoin] socket ${socket.id} joined supportInbox`);
+  });
+
+  socket.on("supportInboxLeave", () => {
+    if (socket.rooms.has("supportInbox")) socket.leave("supportInbox");
+  });
+  // ========= End customer-support chat rooms =========
+
   socket.on("endLiveSeller", async (data) => {
     console.log("data in endLiveSeller: ", data);
 

@@ -59,6 +59,12 @@ const Sidebar = () => {
       onClick: handleCloseSideBar,
     },
     {
+      name: "Support Chat",
+      path: "/admin/supportInbox",
+      iconName: "MessageCircle",
+      onClick: handleCloseSideBar,
+    },
+    {
       name: "Product Request",
       iconName: "ShoppingCart",
       subMenu: [

@@ -72,6 +72,10 @@ app.use("/setting", SettingRoute);
 const PaystackRoute = require("./server/payment/paystack.route");
 app.use("/payment/paystack", PaystackRoute);
 
+//Live customer-support chat (user ↔ admin).
+const SupportRoute = require("./server/support/support.route");
+app.use("/support", SupportRoute);
+
 //PromoCode Route
 const PromoCodeRoute = require("./server/promoCode/promoCode.route");
 app.use("/promoCode", PromoCodeRoute);

@@ -62,6 +62,7 @@ import { Video } from "lucide-react";
 import VideoReport from "../Table/videoReport/VideoReport";
 import Others from "../Table/other/Others";
 import Giveaway from "../Table/giveaway/Giveaway";
+import SupportInbox from "../Table/support/SupportInbox";
 
 export const token = sessionStorage.getItem("token");
 
@@ -197,6 +198,9 @@ const Admin = ({ isAuthenticated }) => {
 
               {/* promoCode */}
               <Route path="/promoCode" element={<PromoCode />} />
+
+              {/* Live customer-support inbox */}
+              <Route path="/supportInbox" element={<SupportInbox />} />
 
               {/* FaQ */}
               <Route path="/faq" element={<FaQ />} />
