@@ -153,7 +153,13 @@ const SupportInbox = () => {
     // joins this room for direct emits.
     const sock = io(baseURL.replace(/\/$/, ""), {
       transports: ["websocket"],
-      query: { liveRoom: `liveRoom:admin:${adminId || "anon"}` },
+      // Per-admin liveRoom namespace — used only as a hint by the
+      // connect handler; the actual broadcasts go through the
+      // supportInbox + supportRoom:<id> rooms which we join via
+      // dedicated emits below.
+      query: {
+        liveRoom: `liveRoom:admin:${adminInfo._id || adminInfo.id || "anon"}`,
+      },
     });
     socketRef.current = sock;
 
@@ -235,7 +241,7 @@ const SupportInbox = () => {
       socketRef.current = null;
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [adminId]);
+  }, []);
 
   // ── Filter / search effects ────────────────────────────────────────
   useEffect(() => {
