@@ -61,13 +61,28 @@ function baseTemplate({ heading, intro, ctaText, ctaUrl, outro }) {
   </body></html>`;
 }
 
+// Smart-link target for "Open the app" CTAs. config.baseURL is the
+// backend domain (https://www.waxxapp.com/) — pointing CTAs there just
+// opens the API root in a browser, which isn't useful. Until the iOS
+// build ships with its App Store ID, we fall back to the Play Store
+// install / open URL on Android. Devices with the app already installed
+// will resolve the package and open the app; devices without it land
+// on the install page. Override via global.settingJSON.appOpenLink if
+// the admin needs to point this elsewhere (e.g. once iOS is live).
+function appOpenLink() {
+  return (
+    (global.settingJSON && global.settingJSON.appOpenLink) ||
+    "https://play.google.com/store/apps/details?id=com.waxxapp"
+  );
+}
+
 const templates = {
   sellerApproved({ firstName }) {
     return baseTemplate({
       heading: "You're a verified seller 🎉",
       intro: `Hi ${firstName || "there"}, your seller verification has been approved. You can now list products, go live, and start selling.`,
       ctaText: "Open the app",
-      ctaUrl: config.baseURL || "",
+      ctaUrl: appOpenLink(),
       outro: "If you have any questions, just reply to this email.",
     });
   },
@@ -85,7 +100,7 @@ const templates = {
       heading: "Your product is live 🚀",
       intro: `Hi ${firstName || "there"}, <strong>${productName || "your product"}</strong> has been approved and is now visible to buyers.`,
       ctaText: "Manage in the app",
-      ctaUrl: config.baseURL || "",
+      ctaUrl: appOpenLink(),
     });
   },
   productRejected({ firstName, productName, reason }) {
