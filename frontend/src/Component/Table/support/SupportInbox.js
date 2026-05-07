@@ -214,12 +214,25 @@ const SupportInbox = () => {
     sock.on("supportMessage", (raw) => {
       try {
         const msg = typeof raw === "string" ? JSON.parse(raw) : raw;
+        let convIdToMarkRead = null;
         setActiveConversation((prev) => {
           if (!prev) return prev;
           // De-dupe by id.
           if ((prev.messages || []).some((m) => m._id === msg._id)) return prev;
+          // If this is a new user message landing while we have the
+          // conversation open, fire a mark-read to the backend so
+          // the buyer's UI flips ✓ → ✓✓ in real time.
+          if (msg.senderType === "user") {
+            convIdToMarkRead = prev._id;
+          }
           return { ...prev, messages: [...(prev.messages || []), msg] };
         });
+        if (convIdToMarkRead) {
+          sock.emit(
+            "supportMarkRead",
+            JSON.stringify({ conversationId: convIdToMarkRead, readerSide: "admin" })
+          );
+        }
         scrollThreadToBottom();
       } catch (err) {
         console.error("supportMessage parse error:", err);

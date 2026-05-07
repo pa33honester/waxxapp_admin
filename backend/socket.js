@@ -6,6 +6,7 @@ const LiveSellingHistory = require("./server/liveSellingHistory/liveSellingHisto
 const LiveSellingView = require("./server/liveSellingView/liveSellingView.model");
 const LiveChat = require("./server/liveChat/liveChat.model");
 const Follower = require("./server/follower/follower.model");
+const SupportConversation = require("./server/support/support.model");
 
 //momemt
 const moment = require("moment-timezone");
@@ -526,6 +527,58 @@ io.on("connect", async (socket) => {
 
   socket.on("supportInboxLeave", () => {
     if (socket.rooms.has("supportInbox")) socket.leave("supportInbox");
+  });
+
+  // Live read-receipt — fires from the side that's actively viewing
+  // the chat when the OPPOSITE side sends a new message. The HTTP
+  // open-conversation endpoints (myConversation / admin/conversation)
+  // already mark stale unread messages as read on entry, but they only
+  // run on entry — once a session is established, NEW messages from the
+  // other side aren't marked as read until next entry. Without this
+  // handler the buyer's chat shows ✓ instead of ✓✓ even when an admin
+  // is actively reading. Same the other direction.
+  // Payload: { conversationId, readerSide: "user" | "admin" }
+  socket.on("supportMarkRead", async (data) => {
+    try {
+      const parsed = typeof data === "string" ? JSON.parse(data) : data;
+      const conversationId = parsed?.conversationId;
+      const readerSide = parsed?.readerSide;
+      if (!conversationId || !readerSide) return;
+      if (readerSide !== "user" && readerSide !== "admin") return;
+
+      const conv = await SupportConversation.findById(conversationId);
+      if (!conv) return;
+
+      const oppositeSide = readerSide === "user" ? "admin" : "user";
+      let changed = false;
+      conv.messages.forEach((m) => {
+        if (m.senderType === oppositeSide && !m.isRead) {
+          m.isRead = true;
+          changed = true;
+        }
+      });
+      if (readerSide === "user" && conv.unreadByUser > 0) {
+        conv.unreadByUser = 0;
+        changed = true;
+      }
+      if (readerSide === "admin" && conv.unreadByAdmin > 0) {
+        conv.unreadByAdmin = 0;
+        changed = true;
+      }
+      if (!changed) return;
+      await conv.save();
+      io.in("supportRoom:" + conversationId).emit("supportRead", {
+        conversationId,
+        readerSide,
+      });
+      io.in("supportInbox").emit("supportInboxUpdated", {
+        conversationId,
+        unreadByAdmin: conv.unreadByAdmin,
+        unreadByUser: conv.unreadByUser,
+      });
+    } catch (err) {
+      console.error("supportMarkRead error:", err.message);
+    }
   });
   // ========= End customer-support chat rooms =========
 
