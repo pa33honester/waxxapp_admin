@@ -226,6 +226,28 @@ const SupportInbox = () => {
       }
     });
 
+    // Read receipt — flip admin-sent bubbles to double-tick (read by
+    // user) when the buyer opens the conversation. readerSide tells
+    // us WHO read; we mark messages sent by the opposite side.
+    sock.on("supportRead", (payload) => {
+      try {
+        const data = typeof payload === "string" ? JSON.parse(payload) : payload;
+        setActiveConversation((prev) => {
+          if (!prev || !data) return prev;
+          if (data.conversationId !== prev._id) return prev;
+          if (data.readerSide !== "user") return prev;
+          return {
+            ...prev,
+            messages: (prev.messages || []).map((m) =>
+              m.senderType === "admin" && !m.isRead ? { ...m, isRead: true } : m
+            ),
+          };
+        });
+      } catch (err) {
+        console.error("supportRead parse error:", err);
+      }
+    });
+
     return () => {
       // If the admin had a thread open, broadcast presence-off so the
       // buyer's "Support is online" banner clears immediately instead
@@ -372,6 +394,7 @@ const SupportInbox = () => {
             {["open", "closed", "all"].map((s) => (
               <button
                 key={s}
+                type="button"
                 onClick={() => setStatusFilter(s)}
                 style={{
                   padding: "4px 10px",
@@ -441,6 +464,7 @@ const SupportInbox = () => {
               </div>
               {activeConversation.status === "open" && (
                 <button
+                  type="button"
                   onClick={closeConversation}
                   style={{
                     padding: "6px 12px",
@@ -499,12 +523,32 @@ const SupportInbox = () => {
                       <div
                         style={{
                           fontSize: 10,
-                          opacity: 0.7,
+                          opacity: 0.85,
                           marginTop: 4,
                           textAlign: fromAdmin ? "right" : "left",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: fromAdmin ? "flex-end" : "flex-start",
+                          gap: 4,
                         }}
                       >
-                        {formatTime(m.createdAt)}
+                        <span>{formatTime(m.createdAt)}</span>
+                        {/* Read receipts only on admin-sent bubbles —
+                            the user's bubbles already imply "read by
+                            me" since I'm viewing them. Single ✓ = sent
+                            (always shown for admin-sent), double ✓✓ in
+                            light blue = read by the user. */}
+                        {fromAdmin && (
+                          <span
+                            style={{
+                              color: m.isRead ? "#7dd3fc" : "rgba(255,255,255,0.7)",
+                              fontWeight: 700,
+                              fontSize: 12,
+                            }}
+                          >
+                            {m.isRead ? "✓✓" : "✓"}
+                          </span>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -542,6 +586,7 @@ const SupportInbox = () => {
                 }}
               />
               <button
+                type="button"
                 onClick={sendReply}
                 disabled={sending || !composerText.trim()}
                 style={{

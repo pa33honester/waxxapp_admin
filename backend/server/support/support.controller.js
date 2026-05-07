@@ -40,6 +40,20 @@ exports.getOrCreateMyConversation = async (req, res) => {
       });
       conv.unreadByUser = 0;
       await conv.save();
+      // Broadcast read receipt — the admin's UI flips its admin-sent
+      // bubbles from single-tick (sent) to double-tick (read by user).
+      // readerSide says WHO read; the receiver interprets "messages
+      // sent by the OPPOSITE side are now read".
+      if (global.io) {
+        global.io.in("supportRoom:" + conv._id.toString()).emit("supportRead", {
+          conversationId: conv._id.toString(),
+          readerSide: "user",
+        });
+        global.io.in("supportInbox").emit("supportInboxUpdated", {
+          conversationId: conv._id.toString(),
+          unreadByUser: 0,
+        });
+      }
     }
 
     return res.status(200).json({
@@ -327,12 +341,19 @@ exports.adminGetConversation = async (req, res) => {
       await conv.save();
 
       // Broadcast the read-receipt to the inbox so other admins see
-      // the unread badge clear in real time.
+      // the unread badge clear in real time. ALSO broadcast to the
+      // supportRoom so the buyer's chat view flips their user-sent
+      // bubbles from single-tick (sent) to double-tick (read by
+      // admin).
       if (global.io) {
         global.io.in("supportInbox").emit("supportInboxUpdated", {
           conversationId: conv._id.toString(),
           unreadByAdmin: 0,
           lastActivityAt: conv.lastActivityAt,
+        });
+        global.io.in("supportRoom:" + conv._id.toString()).emit("supportRead", {
+          conversationId: conv._id.toString(),
+          readerSide: "admin",
         });
       }
     }
