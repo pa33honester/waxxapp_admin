@@ -16,18 +16,23 @@ import { useSelector } from "react-redux";
 // without polling. The selected conversation's thread also live-
 // updates via `supportMessage` events on the per-conversation room.
 
-const headers = {
+// Build headers per-call so the JWT in sessionStorage is always
+// fresh (the admin's existing util/api.js does the same — axios
+// defaults can drop the Authorization on hard reloads if no action
+// has dispatched LOGIN_ADMIN yet). secretKey gates checkAccessWithSecretKey,
+// Authorization carries the JWT that adminAuth middleware reads.
+const buildHeaders = () => ({
   key: secretKey,
+  Authorization: sessionStorage.getItem("token") || "",
   "Content-Type": "application/json",
-};
+});
 
 const SupportInbox = () => {
-  // The admin reducer stores the JWT-decoded payload as `state.admin.admin`
-  // (see Component/store/admin/admin.reducer.js — `admin: decode`). Token
-  // payloads here typically include the admin's `_id` plus role; we
-  // surface a friendly name fallback.
+  // Backend now derives the admin identity from the Authorization
+  // header (adminAuth middleware → req.admin._id), so we don't have
+  // to extract _id from redux state here. Just keep `adminInfo` for
+  // the display name on the composer placeholder.
   const adminInfo = useSelector((s) => s.admin && s.admin.admin) || {};
-  const adminId = adminInfo._id || adminInfo.id;
   const adminName =
     `${adminInfo.firstName || ""} ${adminInfo.lastName || ""}`.trim() ||
     adminInfo.name ||
@@ -55,7 +60,7 @@ const SupportInbox = () => {
         ...(search && { search }),
       });
       const res = await axios.get(`${baseURL}support/admin/inbox?${params}`, {
-        headers,
+        headers: buildHeaders(),
       });
       if (res.data && res.data.status) {
         setConversations(res.data.conversations || []);
@@ -73,15 +78,25 @@ const SupportInbox = () => {
     try {
       const res = await axios.get(
         `${baseURL}support/admin/conversation/${conversationId}`,
-        { headers }
+        { headers: buildHeaders() }
       );
       if (res.data && res.data.status) {
         setActiveConversation(res.data.conversation);
-        // Joining the per-conversation socket room so live messages stream in.
+        // Joining the per-conversation socket room so live messages stream
+        // in. role: "admin" tells the backend to broadcast presence to the
+        // buyer's app so they see "Support is online" while we're viewing.
         if (socketRef.current && socketRef.current.connected) {
+          // Leave any previously-active thread first so the buyer there
+          // gets a presence-off before we open the new thread.
+          if (activeId && activeId !== conversationId) {
+            socketRef.current.emit(
+              "supportLeave",
+              JSON.stringify({ conversationId: activeId, role: "admin" })
+            );
+          }
           socketRef.current.emit(
             "supportJoin",
-            JSON.stringify({ conversationId })
+            JSON.stringify({ conversationId, role: "admin", name: adminName })
           );
         }
         scrollThreadToBottom();
@@ -94,13 +109,14 @@ const SupportInbox = () => {
   // ── Send admin reply ───────────────────────────────────────────────
   const sendReply = async () => {
     const text = composerText.trim();
-    if (!text || !activeId || !adminId || sending) return;
+    if (!text || !activeId || sending) return;
     setSending(true);
     try {
+      // adminId NOT sent — backend reads it from the JWT.
       const res = await axios.post(
         `${baseURL}support/admin/sendMessage`,
-        { conversationId: activeId, adminId, text },
-        { headers }
+        { conversationId: activeId, text },
+        { headers: buildHeaders() }
       );
       if (res.data && res.data.status) {
         // The socket broadcast will append the message; we just clear
@@ -121,7 +137,7 @@ const SupportInbox = () => {
       await axios.post(
         `${baseURL}support/admin/close`,
         { conversationId: activeId },
-        { headers }
+        { headers: buildHeaders() }
       );
       fetchInbox();
       setActiveConversation((prev) => prev && { ...prev, status: "closed" });
@@ -205,6 +221,15 @@ const SupportInbox = () => {
     });
 
     return () => {
+      // If the admin had a thread open, broadcast presence-off so the
+      // buyer's "Support is online" banner clears immediately instead
+      // of waiting for the socket disconnect to be detected.
+      if (activeId) {
+        sock.emit(
+          "supportLeave",
+          JSON.stringify({ conversationId: activeId, role: "admin" })
+        );
+      }
       sock.emit("supportInboxLeave");
       sock.disconnect();
       socketRef.current = null;

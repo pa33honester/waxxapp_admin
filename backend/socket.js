@@ -478,9 +478,20 @@ io.on("connect", async (socket) => {
       const parsed = typeof data === "string" ? JSON.parse(data) : data;
       const conversationId = parsed?.conversationId;
       if (!conversationId) return;
+      const role = parsed?.role || "user"; // "user" | "admin"
       const room = "supportRoom:" + conversationId;
       if (!socket.rooms.has(room)) socket.join(room);
-      console.log(`[supportJoin] socket ${socket.id} joined ${room}`);
+      console.log(`[supportJoin] socket ${socket.id} joined ${room} as ${role}`);
+      // Broadcast admin presence to the OTHER side (the buyer) so the
+      // chat view can show a "Support is online" indicator. socket.to()
+      // excludes the sender, so the admin doesn't get their own ping.
+      if (role === "admin") {
+        socket.to(room).emit("supportPresence", {
+          conversationId,
+          adminPresent: true,
+          name: parsed?.name || "Support",
+        });
+      }
     } catch (err) {
       console.error("supportJoin error:", err.message);
     }
@@ -491,7 +502,17 @@ io.on("connect", async (socket) => {
       const parsed = typeof data === "string" ? JSON.parse(data) : data;
       const conversationId = parsed?.conversationId;
       if (!conversationId) return;
+      const role = parsed?.role || "user";
       const room = "supportRoom:" + conversationId;
+      // Broadcast presence-off BEFORE leaving the room so the buyer's
+      // socket actually receives it (otherwise the leave drops us out
+      // and the emit goes to no one).
+      if (role === "admin") {
+        socket.to(room).emit("supportPresence", {
+          conversationId,
+          adminPresent: false,
+        });
+      }
       if (socket.rooms.has(room)) socket.leave(room);
     } catch (err) {
       console.error("supportLeave error:", err.message);

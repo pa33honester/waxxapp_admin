@@ -7,7 +7,6 @@
 
 const SupportConversation = require("./support.model");
 const User = require("../user/user.model");
-const Admin = require("../admin/admin.model");
 const Notification = require("../notification/notification.model");
 const admin = require("../../util/privateKey");
 const mongoose = require("mongoose");
@@ -135,16 +134,16 @@ exports.sendUserMessage = async (req, res) => {
   }
 };
 
-// Admin reply. Mirrors sendUserMessage but credits the admin in the
-// snapshot fields and sends an FCM push to the user's device.
+// Admin reply. The admin identity comes from req.admin (set by the
+// adminAuth middleware that validated the JWT) — we don't accept a
+// client-supplied adminId because the React panel's redux state
+// sometimes didn't carry the JWT's _id field reliably, which was the
+// "Send button doesn't work" bug.
 exports.sendAdminMessage = async (req, res) => {
   try {
-    const { conversationId, adminId, text } = req.body || {};
+    const { conversationId, text } = req.body || {};
     if (!conversationId || !mongoose.Types.ObjectId.isValid(conversationId)) {
       return res.status(200).json({ status: false, message: "Valid conversationId required" });
-    }
-    if (!adminId || !mongoose.Types.ObjectId.isValid(adminId)) {
-      return res.status(200).json({ status: false, message: "Valid adminId required" });
     }
     const trimmed = (text || "").toString().trim();
     if (!trimmed) {
@@ -154,11 +153,12 @@ exports.sendAdminMessage = async (req, res) => {
       return res.status(200).json({ status: false, message: "Message too long (max 2000 chars)" });
     }
 
-    const [adminDoc, conv] = await Promise.all([
-      Admin.findById(adminId),
-      SupportConversation.findById(conversationId),
-    ]);
-    if (!adminDoc) return res.status(200).json({ status: false, message: "Admin not found" });
+    const adminDoc = req.admin;
+    if (!adminDoc) {
+      return res.status(401).json({ status: false, message: "Admin not authenticated" });
+    }
+
+    const conv = await SupportConversation.findById(conversationId);
     if (!conv) return res.status(200).json({ status: false, message: "Conversation not found" });
 
     const adminName = `${adminDoc.firstName || ""} ${adminDoc.lastName || ""}`.trim() || "Support";
