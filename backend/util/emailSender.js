@@ -69,11 +69,27 @@ function baseTemplate({ heading, intro, ctaText, ctaUrl, outro }) {
 // will resolve the package and open the app; devices without it land
 // on the install page. Override via global.settingJSON.appOpenLink if
 // the admin needs to point this elsewhere (e.g. once iOS is live).
+// Defensive — even if settingJSON.appOpenLink ends up pointing at the
+// backend domain (which is the actual symptom we keep seeing in the
+// "Open the app" email CTA), reject it and fall through to the Play
+// Store URL so users always end up somewhere useful.
+const PLAY_STORE_URL = "https://play.google.com/store/apps/details?id=com.waxxapp";
 function appOpenLink() {
-  return (
-    (global.settingJSON && global.settingJSON.appOpenLink) ||
-    "https://play.google.com/store/apps/details?id=com.waxxapp"
-  );
+  const override = global.settingJSON && global.settingJSON.appOpenLink;
+  if (typeof override === "string") {
+    const cleaned = override.trim();
+    if (
+      cleaned &&
+      !/waxxapp\.com\/?$/i.test(cleaned) && // bare backend domain
+      !cleaned.startsWith("http://www.waxxapp.com") &&
+      !cleaned.startsWith("https://www.waxxapp.com/admin") &&
+      cleaned !== "https://www.waxxapp.com" &&
+      cleaned !== "https://www.waxxapp.com/"
+    ) {
+      return cleaned;
+    }
+  }
+  return PLAY_STORE_URL;
 }
 
 const templates = {
