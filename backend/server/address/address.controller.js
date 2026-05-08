@@ -35,6 +35,12 @@ exports.store = async (req, res) => {
     address.city = req.body.city || address.city;
     address.zipCode = parseInt(req.body.zipCode) || address.zipCode;
     address.address = req.body.address.trim() || address.address;
+    if (typeof req.body.phoneNumber === "string") {
+      // Trim + normalise empty string to null so the schema's
+      // default doesn't keep an empty string lying around.
+      const trimmed = req.body.phoneNumber.trim();
+      address.phoneNumber = trimmed.length > 0 ? trimmed : null;
+    }
     await address.save();
 
     return res.status(200).json({
@@ -88,6 +94,10 @@ exports.update = async (req, res) => {
     address.city = req.body.city ? req.body.city : address.city;
     address.zipCode = req.body.zipCode ? parseInt(req.body.zipCode) : address.zipCode;
     address.address = req.body.address.trim() ? req.body.address.trim() : address.address;
+    if (typeof req.body.phoneNumber === "string") {
+      const trimmed = req.body.phoneNumber.trim();
+      address.phoneNumber = trimmed.length > 0 ? trimmed : null;
+    }
 
     await address.save();
 

@@ -9,6 +9,12 @@ const addressSchema = new mongoose.Schema(
     city: { type: String },
     zipCode: { type: Number },
     address: { type: String },
+    // Optional per-address contact phone. Buyers can supply a
+    // recipient phone different from their signup number (e.g. when
+    // shipping to a friend / office). Checkout's Delivery Location
+    // card prefers this over the user's signup mobileNumber when
+    // present.
+    phoneNumber: { type: String, default: null },
     isSelect: { type: Boolean, default: false },
   },
   {
