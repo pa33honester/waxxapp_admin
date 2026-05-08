@@ -1033,6 +1033,23 @@ exports.fetchSellerProfile = async (req, res) => {
             as: "productsByCategory",
           },
         },
+        // Pull the seller's owning User row so we can surface
+        // verificationStatus on the profile (drives the blue tick
+        // badge for the seller's pages and product cards).
+        {
+          $lookup: {
+            from: "users",
+            localField: "userId",
+            foreignField: "_id",
+            as: "ownerUser",
+          },
+        },
+        {
+          $unwind: {
+            path: "$ownerUser",
+            preserveNullAndEmptyArrays: true,
+          },
+        },
         {
           $project: {
             firstName: 1,
@@ -1044,6 +1061,7 @@ exports.fetchSellerProfile = async (req, res) => {
             following: 1,
             isFollow: { $gt: [{ $size: "$followStatus" }, 0] },
             productsByCategory: 1,
+            verificationStatus: { $ifNull: ["$ownerUser.verificationStatus", "none"] },
           },
         },
       ]),
