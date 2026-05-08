@@ -5,9 +5,21 @@ const route = express.Router();
 //multer
 const multer = require("multer");
 const storage = require("../../util/multer");
-const { fileFilter } = require("../../util/multer");
+const { fileFilter, kycAwareStorage } = require("../../util/multer");
+
+// Default upload writes everything to public storage/. Used for
+// admin-side `image` swap (admin.middleware-gated; no biometric
+// content) on PATCH /update.
 const upload = multer({
   storage,
+  fileFilter,
+});
+
+// Mixed upload that routes KYC fields (govId, addressProof,
+// registrationCert) to private_storage/ while leaving public fields
+// (logo) on storage/. Used on POST /create.
+const mixedUpload = multer({
+  storage: kycAwareStorage,
   fileFilter,
 });
 
@@ -20,7 +32,7 @@ const sellerRequestController = require("./sellerRequest.controller");
 route.post(
   "/create",
   checkAccessWithSecretKey(),
-  upload.fields([
+  mixedUpload.fields([
     { name: "logo", maxCount: 5 },
     { name: "govId", maxCount: 5 },
     { name: "registrationCert", maxCount: 5 },

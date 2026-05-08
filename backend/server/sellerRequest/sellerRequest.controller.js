@@ -14,6 +14,9 @@ const config = require("../../config");
 //deleteFile
 const { deleteFile, deleteFiles } = require("../../util/deleteFile");
 
+//file URL helper — routes KYC fields to /private-file/ vs public /storage/
+const { fileUrlFor } = require("../../util/multer");
+
 //private key
 const admin = require("../../util/privateKey");
 
@@ -101,20 +104,23 @@ exports.storeRequest = async (req, res) => {
     request.category = req.body.category || null;
     request.description = req.body.description || null;
 
+    // Public uploads (logo) → /storage/<path>; KYC uploads
+    // (govId / addressProof / registrationCert) → /private-file/<filename>.
+    // fileUrlFor encapsulates that routing decision.
     if (req.files?.logo?.[0]) {
-      request.logo = config.baseURL + req.files.logo[0].path.replace(/\\/g, "/");
+      request.logo = fileUrlFor(req.files.logo[0], config.baseURL);
     }
 
     if (req.files?.govId?.[0]) {
-      request.govId = config.baseURL + req.files.govId[0].path.replace(/\\/g, "/");
+      request.govId = fileUrlFor(req.files.govId[0], config.baseURL);
     }
 
     if (req.files?.registrationCert?.[0]) {
-      request.registrationCert = config.baseURL + req.files.registrationCert[0].path.replace(/\\/g, "/");
+      request.registrationCert = fileUrlFor(req.files.registrationCert[0], config.baseURL);
     }
 
     if (req.files?.addressProof?.[0]) {
-      request.addressProof = config.baseURL + req.files.addressProof[0].path.replace(/\\/g, "/");
+      request.addressProof = fileUrlFor(req.files.addressProof[0], config.baseURL);
     }
 
     //seller's address fields

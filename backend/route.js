@@ -186,4 +186,8 @@ app.use("/", LoginRoute);
 const PrivateFileRoute = require("./server/privateFile/privateFile.route");
 app.use("/private-file", PrivateFileRoute);
 
+//Verification Route — selfie identity verification (admin-issued blue tick)
+const VerificationRoute = require("./server/verification/verification.route");
+app.use("/verification", VerificationRoute);
+
 module.exports = app;
