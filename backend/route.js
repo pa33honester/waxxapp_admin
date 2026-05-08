@@ -180,4 +180,10 @@ app.use("/reportReason", ReportreasonRoute);
 const LoginRoute = require("./server/login/login.route");
 app.use("/", LoginRoute);
 
+//Private file route — auth-gated GET for KYC / biometric uploads
+//(selfie verification + future-migrated seller KYC docs). Files are
+//written to backend/private_storage/ which is NOT served statically.
+const PrivateFileRoute = require("./server/privateFile/privateFile.route");
+app.use("/private-file", PrivateFileRoute);
+
 module.exports = app;

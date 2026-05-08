@@ -30,7 +30,28 @@ const fileFilter = (req, file, callback) => {
   }
 };
 
+// Private storage for biometric / KYC uploads (selfie verification +
+// future-migrated govId / addressProof / registrationCert). Files
+// land under `private_storage/` which is NOT served by the static
+// /storage middleware — they're only accessible via the auth-gated
+// /private-file/:filename controller.
+const privateStorage = multer.diskStorage({
+  filename: (req, file, callback) => {
+    const filename = Date.now() + Math.floor(Math.random() * 100) + file.originalname;
+    callback(null, filename);
+  },
+
+  destination: (req, file, callback) => {
+    if (!fs.existsSync("private_storage")) {
+      fs.mkdirSync("private_storage");
+    }
+
+    callback(null, "private_storage");
+  },
+});
+
 // Export storage as default for backward compatibility, and fileFilter as named export
 module.exports = storage;
 module.exports.fileFilter = fileFilter;
 module.exports.storage = storage;
+module.exports.privateStorage = privateStorage;

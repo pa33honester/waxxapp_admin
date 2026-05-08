@@ -37,6 +37,17 @@ const userSchema = new mongoose.Schema(
     //If user become the seller
     isSeller: { type: Boolean, default: false },
     seller: { type: mongoose.Schema.Types.ObjectId, ref: "Seller", default: null },
+
+    // Selfie verification status — denormalized from the latest
+    // Verification doc for this user. Hot read paths (badge rendering
+    // on product cards, live host name, search rows) read this field
+    // directly instead of joining Verification. Source of truth still
+    // lives on the Verification collection.
+    verificationStatus: {
+      type: String,
+      enum: ["none", "pending_review", "verified", "rejected"],
+      default: "none",
+    },
   },
   {
     timestamps: true,

@@ -1,5 +1,6 @@
 /node_modules
 /storage/*
+/private_storage/*
 /public/
 config.js
 setting.js

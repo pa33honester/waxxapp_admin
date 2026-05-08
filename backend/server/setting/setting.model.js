@@ -22,6 +22,14 @@ const settingSchema = new mongoose.Schema(
       isActive: { type: Boolean, default: true },
     },
 
+    // Selfie verification (admin-issued blue tick). Off by default —
+    // PR 1 ships the schema; flip isActive to true once the queue UI
+    // and Flutter capture flow are deployed.
+    selfieVerification: {
+      isRequired: { type: Boolean, default: false },
+      isActive: { type: Boolean, default: false },
+    },
+
     zegoAppId: { type: String, default: "ZEGO APP ID" },
     zegoAppSignIn: { type: String, default: "ZEGO APP SIGN IN" },
 

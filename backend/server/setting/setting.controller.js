@@ -108,7 +108,7 @@ exports.handleFieldSwitch = async (req, res) => {
       return res.status(200).json({ status: false, message: "Setting not found!" });
     }
 
-    const validFields = ["addressProof", "govId", "registrationCert"];
+    const validFields = ["addressProof", "govId", "registrationCert", "selfieVerification"];
     const validToggles = ["isActive", "isRequired"];
 
     if (!validFields.includes(field) || !validToggles.includes(toggleType)) {
