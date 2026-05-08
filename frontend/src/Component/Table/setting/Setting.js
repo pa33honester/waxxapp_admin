@@ -368,6 +368,37 @@ const Setting = (props) => {
                   />
                 </div>
               </div>
+
+              {/* Selfie Verification Row */}
+              <div className="d-flex justify-content-between align-items-center mt-2">
+                <h5 className="me-2 fw-semibold" style={{ width: "200px", whiteSpace: "nowrap" }}>Selfie Verification</h5>
+                <div style={{ width: "80px", textAlign: "center" }}>
+                  <ToggleSwitch
+                    value={setting?.selfieVerification?.isRequired}
+                    onClick={() => {
+                      handleClick("selfieVerification", "isRequired");
+                      if (setting?.selfieVerification?.isActive === false && setting?.selfieVerification?.isRequired === false) {
+                        setTimeout(() => {
+                          handleClick("selfieVerification", "isActive");
+                        }, 1000);
+                      }
+                    }}
+                  />
+                </div>
+                <div style={{ width: "80px", textAlign: "center" }}>
+                  <ToggleSwitch
+                    value={setting?.selfieVerification?.isActive}
+                    onClick={() => {
+                      handleClick("selfieVerification", "isActive");
+                      if (setting?.selfieVerification?.isRequired === true && setting?.selfieVerification?.isActive === true) {
+                        setTimeout(() => {
+                          handleClick("selfieVerification", "isRequired");
+                        }, 1000);
+                      }
+                    }}
+                  />
+                </div>
+              </div>
             </SettingBox>
 
 

@@ -171,6 +171,13 @@ const Sidebar = () => {
         },
       ],
     },
+
+    {
+      name: "Verifications",
+      path: "/admin/verification",
+      iconName: "ShieldCheck",
+      onClick: handleCloseSideBar,
+    },
     {
       name: "Live Seller",
       path: "/admin/liveseller",

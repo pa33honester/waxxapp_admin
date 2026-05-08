@@ -17,6 +17,7 @@ import UserProfile from "../Table/user/UserProfile";
 import Seller from "../Table/seller/Seller";
 import AdminProfile from "../Table/admin/AdminProfile";
 import SellerRequest from "../Table/sellerRequest/SellerRequest";
+import Verification from "../Table/verification/Verification";
 import SellerProfile from "../Table/seller/SellerProfile";
 import AddSeller from "../Table/seller/AddSeller";
 import Product from "../Table/Product/Product";
@@ -149,6 +150,9 @@ const Admin = ({ isAuthenticated }) => {
               />
               {/* seller Request */}
               <Route path="/sellerRequest" element={<SellerRequest />} />
+
+              {/* selfie verification queue */}
+              <Route path="/verification" element={<Verification />} />
 
               {/* category  && subCategory */}
               <Route path="/category" element={<Category />} />
