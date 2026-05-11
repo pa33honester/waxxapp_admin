@@ -241,26 +241,35 @@ exports.removeFromCart = async (req, res) => {
         console.log("updateRecordIndex: ", updateRecordIndex);
 
         if (updateRecordIndex !== -1) {
-          if (cartByUser.items[updateRecordIndex]?.productQuantity >= parseInt(req.body.productQuantity)) {
-            const updatedQuan = Number(cartByUser.items[updateRecordIndex].productQuantity) - Number(req?.body?.productQuantity);
-            cartByUser.items[updateRecordIndex].productQuantity = updatedQuan;
+          // If the cart row's stored quantity is somehow at 0 (e.g.
+          // a previous decrement reduced it but the $pull cleanup
+          // didn't run, leaving the row in a stale state), or if
+          // the requested decrement exceeds the stored quantity,
+          // treat the operation as "remove this line entirely"
+          // rather than returning a confusing error. The buyer's
+          // intent — remove from cart — is clear in either case,
+          // and the subsequent $pull / cart-delete branches below
+          // will then converge on the correct empty-cart state.
+          const storedQty = Number(cartByUser.items[updateRecordIndex]?.productQuantity ?? 0);
+          const requestedQty = parseInt(req.body.productQuantity);
+          const effectiveDecrement = storedQty >= requestedQty ? requestedQty : storedQty;
 
-            var purchasedTimeProductPrice;
-            purchasedTimeProductPrice = cartByUser.items[updateRecordIndex].purchasedTimeProductPrice;
+          const updatedQuan = storedQty - effectiveDecrement;
+          cartByUser.items[updateRecordIndex].productQuantity = updatedQuan;
 
-            const subTotal = cartByUser.subTotal - purchasedTimeProductPrice * parseInt(req.body.productQuantity);
+          var purchasedTimeProductPrice;
+          purchasedTimeProductPrice = cartByUser.items[updateRecordIndex].purchasedTimeProductPrice;
 
-            result = await Cart.findOneAndUpdate(
-              { _id: cartByUser._id },
-              {
-                items: cartByUser.items,
-                subTotal,
-              },
-              { new: true }
-            );
-          } else {
-            return res.status(200).json({ status: false, message: "Product's productQuantity does not found in the cart." });
-          }
+          const subTotal = cartByUser.subTotal - purchasedTimeProductPrice * effectiveDecrement;
+
+          result = await Cart.findOneAndUpdate(
+            { _id: cartByUser._id },
+            {
+              items: cartByUser.items,
+              subTotal,
+            },
+            { new: true }
+          );
 
           if (result && result.items.some((item) => item.productQuantity === 0)) {
             const filteredItems = result.items.filter((item) => item.productQuantity !== 0);
