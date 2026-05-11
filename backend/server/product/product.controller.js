@@ -19,6 +19,7 @@ const Order = require("../order/order.model");
 const Favorite = require("../favorite/favorite.model");
 const Review = require("../review/review.model");
 const Notification = require("../notification/notification.model");
+const Follower = require("../follower/follower.model");
 const LikeHistoryOfReel = require("../likeHistoryOfReel/likeHistoryOfReel.model");
 const Attributes = require("../attributes/attributes.model");
 const AuctionBid = require("../auctionBid/auctionBid.model");
@@ -195,6 +196,68 @@ exports.fetchCatSubcatAttrData = async (req, res) => {
   }
 };
 
+// Notify everyone following this seller that a new product just
+// went live. Called when a product is created directly (no admin
+// approval gate) or when admin approves a pending product. Writes a
+// Notification row per follower for the in-app feed + sends FCM
+// multicast for the push. Best-effort: failures are logged and
+// swallowed so they don't block the calling endpoint's response.
+const notifyFollowersOfNewProduct = async (product) => {
+  try {
+    if (!product || !product.seller) return;
+    const followers = await Follower.find({ sellerId: product.seller }).lean();
+    if (!followers || followers.length === 0) return;
+    const followerIds = followers.map((f) => f.userId).filter(Boolean);
+    if (followerIds.length === 0) return;
+
+    const sellerDoc = await Seller.findById(product.seller).select("businessName firstName").lean();
+    const sellerName = sellerDoc?.businessName || sellerDoc?.firstName || "A seller you follow";
+
+    const title = `${sellerName} just listed a new product`;
+    const message = product.productName ? `Check out ${product.productName}` : "Tap to view their new listing.";
+    const image = product.mainImage || "";
+    const dateStr = new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" });
+
+    // In-app notification rows (one per follower).
+    const docs = followerIds.map((uid) => ({
+      userId: uid,
+      productId: product._id,
+      sellerId: product.seller,
+      title,
+      message,
+      image,
+      date: dateStr,
+    }));
+    if (docs.length > 0) {
+      await Notification.insertMany(docs, { ordered: false }).catch((e) => {
+        console.error("notifyFollowersOfNewProduct insert err:", e?.message);
+      });
+    }
+
+    // FCM multicast to followers' devices.
+    const users = await User.find({ _id: { $in: followerIds }, isBlock: false }).select("fcmToken").lean();
+    const tokens = users.map((u) => u.fcmToken).filter((t) => t && typeof t === "string" && t.trim() !== "");
+    if (tokens.length === 0) return;
+
+    try {
+      const adminPromise = await admin;
+      await adminPromise.messaging().sendEachForMulticast({
+        tokens,
+        notification: { title, body: message, ...(image ? { image } : {}) },
+        data: {
+          type: "FOLLOWED_SELLER_NEW_PRODUCT",
+          productId: product._id.toString(),
+          sellerId: product.seller.toString(),
+        },
+      });
+    } catch (e) {
+      console.error("notifyFollowersOfNewProduct FCM err:", e?.message);
+    }
+  } catch (e) {
+    console.error("notifyFollowersOfNewProduct outer err:", e?.message);
+  }
+};
+
 //add product by seller
 exports.createProduct = async (req, res) => {
   try {
@@ -361,6 +424,13 @@ exports.createProduct = async (req, res) => {
         }
       );
     }
+
+    // Fire follower notifications only after the product is actually
+    // live. Pending products that still need admin approval get
+    // notified later from acceptCreateRequest when admin approves.
+    if (product.createStatus === "Approved") {
+      notifyFollowersOfNewProduct(product);
+    }
   } catch (error) {
     if (req.files) deleteFiles(req.files);
     console.error("createProduct error:", error);
@@ -392,6 +462,9 @@ exports.acceptCreateRequest = async (req, res) => {
       await product.save();
 
       const deliveries = await sendCreateRequestDecisionNotification({ product, decision: "Approved" });
+
+      // Product just went live → notify the seller's followers.
+      notifyFollowersOfNewProduct(product);
 
       if (product.productSaleType === 2 && product.enableAuction && product.auctionEndDate && product.createStatus === "Approved") {
         await manualAuctionQueue.add(
