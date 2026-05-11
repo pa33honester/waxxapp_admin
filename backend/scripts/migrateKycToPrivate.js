@@ -85,20 +85,47 @@ const moveFile = (filename) => {
 
 const newUrlFor = (filename) => `${config.baseURL}private-file/${filename}`;
 
+// H5: roll the just-moved file(s) back to storage/ if the DB
+// update fails. Without this, a partial migration leaves files in
+// private_storage/ while the DB still points at /storage/<filename>,
+// which the static handler can't find anymore.
+const _rollbackFiles = (moved) => {
+  for (const filename of moved) {
+    try {
+      const src = path.join(PRIVATE_DIR, filename);
+      const dst = path.join(STORAGE_DIR, filename);
+      if (fs.existsSync(src)) {
+        fs.renameSync(src, dst);
+        log("rolled back", filename);
+      }
+    } catch (e) {
+      log("rollback error for", filename, ":", e?.message);
+    }
+  }
+};
+
 const migrateDoc = async (Model, doc) => {
   const updates = {};
+  const movedThisDoc = [];
   for (const field of KYC_FIELDS) {
     const url = doc[field];
     if (!url || isAlreadyPrivate(url)) continue;
     const filename = filenameFromUrl(url);
     if (!filename) continue;
     moveFile(filename);
+    if (!DRY_RUN) movedThisDoc.push(filename);
     updates[field] = newUrlFor(filename);
   }
   if (Object.keys(updates).length === 0) return false;
   log(`${Model.modelName} ${doc._id}: rewriting`, Object.keys(updates).join(", "));
   if (!DRY_RUN) {
-    await Model.updateOne({ _id: doc._id }, { $set: updates });
+    try {
+      await Model.updateOne({ _id: doc._id }, { $set: updates });
+    } catch (e) {
+      log(`${Model.modelName} ${doc._id}: DB update FAILED — rolling back files:`, e?.message);
+      _rollbackFiles(movedThisDoc);
+      throw e;
+    }
   }
   return true;
 };

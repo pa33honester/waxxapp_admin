@@ -1,11 +1,16 @@
 const fs = require("fs");
 const path = require("path");
 const jwt = require("jsonwebtoken");
+const mongoose = require("mongoose");
 
 const config = require("../../config");
 const Verification = require("../verification/verification.model");
 const Seller = require("../seller/seller.model");
 const SellerRequest = require("../sellerRequest/sellerRequest.model");
+
+// Escape a filename to be safe inside a regex literal — the multer
+// random suffix can contain `.` which would otherwise match any char.
+const _escapeRegex = (s) => String(s).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
 // Auth-gated GET for private KYC / biometric files. Three accepted
 // callers:
@@ -46,37 +51,38 @@ exports.serve = async (req, res) => {
       }
     }
 
-    // Owner path.
-    const userId = req.query.userId || req.body.userId;
-    if (!userId) {
+    // Owner path. Validate userId aggressively — empty string,
+    // undefined, or anything that isn't a valid ObjectId is treated
+    // as Unauthorized. Without this guard a request with
+    // `userId=""` would proceed into the ownership lookups, where
+    // it would silently match no documents (correct outcome, but
+    // wastes 3 DB queries per malformed request).
+    const userId = (req.query.userId || req.body.userId || "").toString().trim();
+    if (!userId || !mongoose.Types.ObjectId.isValid(userId)) {
       return res.status(401).json({ status: false, message: "Unauthorized" });
     }
 
     // Look the filename up against any doc that legitimately
-    // references it. The path stored in the doc may be a full URL
-    // (legacy) or just `/private-file/<filename>` — we only need the
-    // filename to match.
-    const matches = (value) => {
-      if (!value || typeof value !== "string") return false;
-      return value.includes(filename);
-    };
-
+    // references it. The path stored in the doc is the full
+    // /private-file/<filename> URL, so we match by regex (the
+    // filename is escaped to avoid regex-injection via the `.`).
+    const safe = _escapeRegex(filename);
     const owns = await Promise.any([
-      Verification.findOne({ userId, selfieFile: { $regex: filename } }).lean().then((d) => (d ? true : Promise.reject())),
+      Verification.findOne({ userId, selfieFile: { $regex: safe } }).lean().then((d) => (d ? true : Promise.reject())),
       Seller.findOne({
         userId,
         $or: [
-          { govId: { $regex: filename } },
-          { addressProof: { $regex: filename } },
-          { registrationCert: { $regex: filename } },
+          { govId: { $regex: safe } },
+          { addressProof: { $regex: safe } },
+          { registrationCert: { $regex: safe } },
         ],
       }).lean().then((d) => (d ? true : Promise.reject())),
       SellerRequest.findOne({
         userId,
         $or: [
-          { govId: { $regex: filename } },
-          { addressProof: { $regex: filename } },
-          { registrationCert: { $regex: filename } },
+          { govId: { $regex: safe } },
+          { addressProof: { $regex: safe } },
+          { registrationCert: { $regex: safe } },
         ],
       }).lean().then((d) => (d ? true : Promise.reject())),
     ]).catch(() => false);

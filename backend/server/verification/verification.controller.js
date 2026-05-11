@@ -6,6 +6,20 @@ const admin = require("../../util/privateKey");
 const { fileUrlFor } = require("../../util/multer");
 const { deleteFile } = require("../../util/deleteFile");
 
+const fs = require("fs");
+const path = require("path");
+
+// Resolve the on-disk path for a /private-file/<filename> URL stored
+// on a Verification row. Returns null if the URL doesn't match the
+// expected shape or the file doesn't exist on disk.
+const _resolvePrivateFilePath = (urlOrPath) => {
+  if (!urlOrPath || typeof urlOrPath !== "string") return null;
+  const filename = urlOrPath.split("/").pop();
+  if (!filename || filename.includes("..") || filename.includes("\\")) return null;
+  const filePath = path.join(__dirname, "..", "..", "private_storage", filename);
+  return fs.existsSync(filePath) ? filePath : null;
+};
+
 // Submit a selfie for verification.
 // Body (multipart): { userId, autoCheckResult? } + file field "selfie"
 //
@@ -61,6 +75,31 @@ exports.submitSelfie = async (req, res) => {
     }
 
     const url = fileUrlFor(req.file, config.baseURL);
+
+    // H1: clean up any orphaned rejected selfie from a previous
+    // attempt. Resubmissions write a new row + file every time, so
+    // without this private_storage/ would fill with files that no
+    // doc references. Only delete files belonging to ROWS that are
+    // either rejected or pending_review — never touch a verified
+    // row's file (kept for audit). Best-effort; failures swallow.
+    try {
+      const prior = await Verification.find({
+        userId,
+        status: { $in: ["rejected", "pending_review"] },
+      }).select("selfieFile").lean();
+      for (const p of prior) {
+        const filePath = _resolvePrivateFilePath(p?.selfieFile);
+        if (filePath) {
+          try {
+            fs.unlinkSync(filePath);
+          } catch (e) {
+            console.log("submitSelfie: stale-file cleanup:", e?.message);
+          }
+        }
+      }
+    } catch (e) {
+      console.log("submitSelfie: prior lookup error:", e?.message);
+    }
 
     const verification = new Verification({
       userId,
@@ -173,14 +212,46 @@ exports.adminReview = async (req, res) => {
       return res.status(200).json({ status: false, message: "Verification not found" });
     }
 
+    // C2: snapshot the previous state so a failure of the second
+    // write can roll back the first. Mongo replica-set transactions
+    // would be cleaner; without guaranteed RS, we hand-roll a
+    // best-effort rollback to keep User.verificationStatus and
+    // Verification.status from desynchronising.
+    const prevStatus = verification.status;
+    const prevReviewedAt = verification.reviewedAt;
+    const prevReviewedBy = verification.reviewedBy;
+    const prevRejectionReason = verification.rejectionReason;
+
     verification.status = decision;
     verification.reviewedAt = new Date();
     verification.reviewedBy = req.admin?._id || null;
     verification.rejectionReason = decision === "rejected" ? (rejectionReason || null) : null;
     await verification.save();
 
-    // Mirror the decision to the User's denormalized field.
-    await User.findByIdAndUpdate(verification.userId, { verificationStatus: decision });
+    // Mirror the decision to the User's denormalized field. If THIS
+    // fails, roll the Verification row back to its prior state so
+    // the two records stay consistent. Without this, an admin
+    // approval that fails at the User update leaves a verified
+    // Verification row but a stale User.verificationStatus, and the
+    // badge never appears.
+    try {
+      await User.findByIdAndUpdate(verification.userId, { verificationStatus: decision });
+    } catch (userUpdateErr) {
+      console.error("adminReview: User update failed, rolling back Verification:", userUpdateErr?.message);
+      try {
+        verification.status = prevStatus;
+        verification.reviewedAt = prevReviewedAt;
+        verification.reviewedBy = prevReviewedBy;
+        verification.rejectionReason = prevRejectionReason;
+        await verification.save();
+      } catch (rollbackErr) {
+        console.error("adminReview: rollback also failed:", rollbackErr?.message);
+      }
+      return res.status(500).json({
+        status: false,
+        error: "Could not sync user status — please retry.",
+      });
+    }
 
     // Push notification (best-effort; doesn't fail the response).
     try {

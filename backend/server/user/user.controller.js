@@ -29,6 +29,8 @@ const Rating = require("../rating/rating.model");
 const ReportReel = require("../reportoReel/reportoReel.model");
 const Review = require("../review/review.model");
 const SellerRequest = require("../sellerRequest/sellerRequest.model");
+const Verification = require("../verification/verification.model");
+const path = require("path");
 const Reel = require("../reel/reel.model");
 const Seller = require("../seller/seller.model");
 const LiveSeller = require("../liveSeller/liveSeller.model");
@@ -729,6 +731,27 @@ async function _purgeUserCascade(user, userIsSeller) {
         }
       }
 
+      // Selfie verification rows hold biometric data — when a user
+      // deletes their account, every selfie file we hold must be
+      // removed from private_storage/ too. The URL on the row is the
+      // /private-file/<filename> form; reconstruct the on-disk path
+      // by taking the basename. Errors are logged + swallowed so a
+      // single missing file doesn't block the cascade.
+      const verifications = await Verification.find({ userId: user?._id }).select("selfieFile").lean();
+      for (const v of verifications) {
+        try {
+          if (typeof v?.selfieFile === "string" && v.selfieFile.length > 0) {
+            const filename = v.selfieFile.split("/").pop();
+            if (filename) {
+              const filePath = path.join(__dirname, "..", "..", "private_storage", filename);
+              if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+            }
+          }
+        } catch (e) {
+          console.log("user delete: selfie file cleanup error:", e?.message);
+        }
+      }
+
       await Promise.all([
         Address.deleteMany({ userId: user?._id }),
         Cart.deleteMany({ userId: user?._id }),
@@ -743,6 +766,7 @@ async function _purgeUserCascade(user, userIsSeller) {
         Review.deleteMany({ userId: user?._id }),
         SellerRequest.deleteMany({ userId: user?._id }),
         AuctionBid.deleteMany({ userId: user?._id }),
+        Verification.deleteMany({ userId: user?._id }),
       ]);
     }
 
