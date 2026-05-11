@@ -178,6 +178,13 @@ const Sidebar = () => {
       iconName: "ShieldCheck",
       onClick: handleCloseSideBar,
     },
+
+    {
+      name: "Broadcast",
+      path: "/admin/broadcast",
+      iconName: "Megaphone",
+      onClick: handleCloseSideBar,
+    },
     {
       name: "Live Seller",
       path: "/admin/liveseller",

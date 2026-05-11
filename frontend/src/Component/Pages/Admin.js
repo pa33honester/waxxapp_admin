@@ -18,6 +18,7 @@ import Seller from "../Table/seller/Seller";
 import AdminProfile from "../Table/admin/AdminProfile";
 import SellerRequest from "../Table/sellerRequest/SellerRequest";
 import Verification from "../Table/verification/Verification";
+import BroadcastNotification from "../Table/admin/BroadcastNotification";
 import SellerProfile from "../Table/seller/SellerProfile";
 import AddSeller from "../Table/seller/AddSeller";
 import Product from "../Table/Product/Product";
@@ -153,6 +154,9 @@ const Admin = ({ isAuthenticated }) => {
 
               {/* selfie verification queue */}
               <Route path="/verification" element={<Verification />} />
+
+              {/* admin broadcast — push notification to all users / sellers */}
+              <Route path="/broadcast" element={<BroadcastNotification />} />
 
               {/* category  && subCategory */}
               <Route path="/category" element={<Category />} />
