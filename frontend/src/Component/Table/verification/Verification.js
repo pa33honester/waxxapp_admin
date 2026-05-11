@@ -23,7 +23,7 @@ const STATUS_FILTERS = [
 
 const Verification = (props) => {
   const dispatch = useDispatch();
-  const { queue, total } = useSelector((state) => state.verification);
+  const { queue, total = 0 } = useSelector((state) => state.verification);
 
   const [statusFilter, setStatusFilter] = useState("pending_review");
   const [page, setPage] = useState(0);
@@ -34,13 +34,23 @@ const Verification = (props) => {
   const [rejectingFor, setRejectingFor] = useState(null); // verificationId
   const [rejectionReason, setRejectionReason] = useState("");
 
+  // H2: server-side pagination. The backend's adminList accepts
+  // `page` + `limit` and returns { data, total, page, limit }. Refetch
+  // whenever the user changes page, page size, or status filter so
+  // queues bigger than the initial fetch chunk stay reachable.
   useEffect(() => {
-    dispatch(getVerificationQueue(statusFilter, 1, 200));
-  }, [dispatch, statusFilter]);
+    dispatch(getVerificationQueue(statusFilter, page + 1, rowsPerPage));
+  }, [dispatch, statusFilter, page, rowsPerPage]);
 
   useEffect(() => {
     setData(queue);
   }, [queue]);
+
+  // Reset to first page whenever the status filter changes — the
+  // current page index could be out of range under the new filter.
+  useEffect(() => {
+    setPage(0);
+  }, [statusFilter]);
 
   const handleChangePage = (event, newPage) => {
     setPage(newPage);
@@ -275,16 +285,16 @@ const Verification = (props) => {
                 mapData={mapData}
                 PerPage={rowsPerPage}
                 Page={page}
-                type={"client"}
+                type={"server"}
               />
               <Pagination
                 component="div"
-                count={data?.length || 0}
+                count={total}
                 serverPage={page}
-                type={"client"}
+                type={"server"}
                 onPageChange={handleChangePage}
                 serverPerPage={rowsPerPage}
-                totalData={data?.length || 0}
+                totalData={total}
                 onRowsPerPageChange={handleChangeRowsPerPage}
               />
             </div>
