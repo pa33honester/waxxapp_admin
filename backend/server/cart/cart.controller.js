@@ -27,6 +27,38 @@ function resolveCartShipping(product, requestedType) {
   return { price: Number(product.shippingCharges) || 0, type: null };
 }
 
+// Structural comparison of two attributesArray values, ignoring
+// fields the client can't (or doesn't) round-trip — Mongoose adds an
+// `_id` to every array subdoc, the client model drops it, and key
+// ordering / the optional `image` field can differ. The OLD
+// `JSON.stringify(a) === JSON.stringify(b)` check failed for any
+// product with attributes (the stored item has `_id`, the inbound
+// request doesn't), which made +/- on those products silently no-op
+// and add-to-cart create duplicate lines. We compare only what
+// actually identifies the selection: same number of attributes, each
+// with a matching `name` and the same set of `values`.
+function sameAttributes(a, b) {
+  const arrA = Array.isArray(a) ? a : [];
+  const arrB = Array.isArray(b) ? b : [];
+  if (arrA.length !== arrB.length) return false;
+  if (arrA.length === 0) return true;
+
+  const norm = (item) => {
+    const name = String(item?.name ?? "").trim().toLowerCase();
+    const rawValues = Array.isArray(item?.values)
+      ? item.values
+      : item?.values != null
+      ? [item.values]
+      : [];
+    const values = rawValues.map((v) => String(v ?? "").trim().toLowerCase()).sort();
+    return name + "|" + values.join(",");
+  };
+
+  const setA = arrA.map(norm).sort();
+  const setB = arrB.map(norm).sort();
+  return setA.every((v, i) => v === setB[i]);
+}
+
 //add product to cart for user
 exports.addToCart = async (req, res) => {
   try {
@@ -70,7 +102,7 @@ exports.addToCart = async (req, res) => {
 
       console.log("Cart already exists");
 
-      let itemIndex = cart.items.findIndex((item) => item.productId.toString() === product._id.toString() && JSON.stringify(item.attributesArray) === JSON.stringify(req.body.attributesArray));
+      let itemIndex = cart.items.findIndex((item) => item.productId.toString() === product._id.toString() && sameAttributes(item.attributesArray, req.body.attributesArray));
 
       if (itemIndex !== -1) {
         //If the same product with the same attributesArray already exists in the cart, update the productQuantity
@@ -237,7 +269,7 @@ exports.removeFromCart = async (req, res) => {
 
     if (cartByUser?.items?.length) {
       if (Array.isArray(attributes)) {
-        const updateRecordIndex = cartByUser.items.findIndex((item) => item?.productId.toString() === product._id.toString() && JSON.stringify(item?.attributesArray) === JSON.stringify(attributes));
+        const updateRecordIndex = cartByUser.items.findIndex((item) => item?.productId.toString() === product._id.toString() && sameAttributes(item?.attributesArray, attributes));
         console.log("updateRecordIndex: ", updateRecordIndex);
 
         if (updateRecordIndex !== -1) {
@@ -438,7 +470,7 @@ exports.updateDeliveryOption = async (req, res) => {
         item.productId &&
         item.productId.toString() === product._id.toString() &&
         (req.body.attributesArray === undefined ||
-          JSON.stringify(item.attributesArray) === JSON.stringify(req.body.attributesArray))
+          sameAttributes(item.attributesArray, req.body.attributesArray))
     );
 
     if (itemIndex === -1) {
