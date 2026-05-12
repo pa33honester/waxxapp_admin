@@ -25,6 +25,7 @@ import { reportReasonReducer } from "../store/reportReason/reportReason.reducer"
 import { videoReportReducer } from "../store/videoReport/videoReport.reducer";
 import { giveawayReducer } from "./giveaway/giveaway.reducer";
 import { verificationReducer } from "./verification/verification.reducer";
+import { accountRequestReducer } from "./accountRequest/accountRequest.reducer";
 
 
 export default combineReducers({
@@ -54,6 +55,7 @@ export default combineReducers({
   videoReport : videoReportReducer,
   giveaway: giveawayReducer,
   verification: verificationReducer,
+  accountRequest: accountRequestReducer,
 
 
 });

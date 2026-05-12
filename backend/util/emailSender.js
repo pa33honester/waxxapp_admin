@@ -137,6 +137,28 @@ const templates = {
               </div><br/>If you didn't request this, you can ignore this email — your account stays as it is.`,
     });
   },
+  // Sign-up assistant: a pending account request was approved and the
+  // account created. We don't email the password (the user chose it in
+  // the app) — just confirm the account is live and how to sign in.
+  accountApproved({ firstName, email }) {
+    return baseTemplate({
+      heading: "Your account is ready 🎉",
+      intro: `Hi ${firstName || "there"}, your account has been approved and created. You can now sign in${email ? ` with <strong>${email}</strong>` : ""} and the password you chose in the app.`,
+      ctaText: "Open the app",
+      ctaUrl: appOpenLink(),
+      outro: "Forgot your password? You can reset it from the sign-in screen. If you have any questions, just reply to this email.",
+    });
+  },
+  // Sign-up assistant: a pending account request was rejected by an admin.
+  accountRejected({ firstName, reason }) {
+    return baseTemplate({
+      heading: "About your account request",
+      intro: `Hi ${firstName || "there"}, we reviewed your account request and weren't able to approve it at this time.`,
+      outro: reason
+        ? `<strong>Reason provided:</strong> ${reason}<br/><br/>If you think this was a mistake, just reply to this email.`
+        : "If you think this was a mistake, just reply to this email.",
+    });
+  },
 };
 
 module.exports = { sendTransactionalEmail, templates };

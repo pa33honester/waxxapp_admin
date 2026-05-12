@@ -190,4 +190,8 @@ app.use("/private-file", PrivateFileRoute);
 const VerificationRoute = require("./server/verification/verification.route");
 app.use("/verification", VerificationRoute);
 
+//AccountRequest Route — pending sign-up requests collected by the in-app sign-up assistant chatbot
+const AccountRequestRoute = require("./server/accountRequest/accountRequest.route");
+app.use("/accountRequest", AccountRequestRoute);
+
 module.exports = app;

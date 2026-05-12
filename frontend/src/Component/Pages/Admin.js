@@ -65,6 +65,7 @@ import VideoReport from "../Table/videoReport/VideoReport";
 import Others from "../Table/other/Others";
 import Giveaway from "../Table/giveaway/Giveaway";
 import SupportInbox from "../Table/support/SupportInbox";
+import AccountRequests from "../Table/accountRequest/AccountRequests";
 
 export const token = sessionStorage.getItem("token");
 
@@ -129,6 +130,7 @@ const Admin = ({ isAuthenticated }) => {
 
               <Route path="/user" element={<User />} />
               <Route path="/UserProfile" element={<UserProfile />} />
+              <Route path="/accountRequests" element={<AccountRequests />} />
               <Route
                 path="/sellerRequestEdit"
                 element={<EditSellerRequest />}

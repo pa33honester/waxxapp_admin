@@ -216,6 +216,12 @@ const Sidebar = () => {
       iconName: "Users",
       onClick: handleCloseSideBar,
     },
+    {
+      name: "Account Requests",
+      path: "/admin/accountRequests",
+      iconName: "UserPlus",
+      onClick: handleCloseSideBar,
+    },
     // {
     //   name: "Seller Withdraw",
     //   path: "/admin/redeem",
