@@ -7,6 +7,7 @@ import Pagination from "../../extra/Pagination";
 import Searching from "../../extra/Searching";
 import Button from "../../extra/Button";
 import { warningAccept } from "../../../util/Alert";
+import { secretKey } from "../../../util/config";
 import defaultImage from "../../../assets/images/default.jpg";
 
 import {
@@ -21,12 +22,62 @@ const STATUS_FILTERS = [
   { value: "all", label: "All" },
 ];
 
+// The selfie URL is `/private-file/<filename>`, an auth-gated route
+// that requires the `key` secret + admin JWT. A bare <img src> can't
+// send those headers, so the request 401s. We fetch the bytes with
+// the right headers and hand the <img> an object URL instead.
+const AuthenticatedImage = ({ src, fallback, alt = "", ...rest }) => {
+  const [blobUrl, setBlobUrl] = useState(null);
+  const [failed, setFailed] = useState(false);
+
+  useEffect(() => {
+    setBlobUrl(null);
+    setFailed(false);
+    if (!src) {
+      setFailed(true);
+      return;
+    }
+    let cancelled = false;
+    let createdUrl = null;
+    fetch(src, {
+      headers: {
+        key: secretKey,
+        Authorization: `${sessionStorage.getItem("token")}`,
+      },
+    })
+      .then((res) => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return res.blob();
+      })
+      .then((blob) => {
+        if (cancelled) return;
+        createdUrl = URL.createObjectURL(blob);
+        setBlobUrl(createdUrl);
+      })
+      .catch(() => {
+        if (!cancelled) setFailed(true);
+      });
+    return () => {
+      cancelled = true;
+      if (createdUrl) URL.revokeObjectURL(createdUrl);
+    };
+  }, [src]);
+
+  if (failed || !blobUrl) {
+    return <img src={fallback || defaultImage} alt={alt} {...rest} />;
+  }
+  return <img src={blobUrl} alt={alt} {...rest} />;
+};
+
 const Verification = (props) => {
   const dispatch = useDispatch();
   const { queue, total = 0 } = useSelector((state) => state.verification);
 
   const [statusFilter, setStatusFilter] = useState("pending_review");
-  const [page, setPage] = useState(0);
+  // 1-indexed to cooperate with the shared Pagination component, which
+  // computes the visible range and the "first/last page" disabled state
+  // assuming page numbers start at 1.
+  const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(20);
   const [search, setSearch] = useState("");
   const [data, setData] = useState([]);
@@ -39,8 +90,8 @@ const Verification = (props) => {
   // whenever the user changes page, page size, or status filter so
   // queues bigger than the initial fetch chunk stay reachable.
   useEffect(() => {
-    dispatch(getVerificationQueue(statusFilter, page + 1, rowsPerPage));
-  }, [dispatch, statusFilter, page, rowsPerPage]);
+    dispatch(getVerificationQueue(statusFilter, currentPage, rowsPerPage));
+  }, [dispatch, statusFilter, currentPage, rowsPerPage]);
 
   useEffect(() => {
     setData(queue);
@@ -49,16 +100,16 @@ const Verification = (props) => {
   // Reset to first page whenever the status filter changes — the
   // current page index could be out of range under the new filter.
   useEffect(() => {
-    setPage(0);
+    setCurrentPage(1);
   }, [statusFilter]);
 
   const handleChangePage = (event, newPage) => {
-    setPage(newPage);
+    setCurrentPage(newPage);
   };
 
   const handleChangeRowsPerPage = (event) => {
     setRowsPerPage(parseInt(event, 10));
-    setPage(0);
+    setCurrentPage(1);
   };
 
   const handleFilterData = (filteredData) => {
@@ -91,7 +142,7 @@ const Verification = (props) => {
     {
       Header: "No",
       width: "20px",
-      Cell: ({ index }) => <span className="text-white fw-normal">{page * rowsPerPage + parseInt(index) + 1}</span>,
+      Cell: ({ index }) => <span className="text-white fw-normal">{(currentPage - 1) * rowsPerPage + parseInt(index) + 1}</span>,
     },
     {
       Header: "User",
@@ -124,7 +175,7 @@ const Verification = (props) => {
       Cell: ({ row }) => (
         <>
           {row?.selfieFile ? (
-            <img
+            <AuthenticatedImage
               src={row.selfieFile}
               height={48}
               width={48}
@@ -136,10 +187,6 @@ const Verification = (props) => {
                   userName: (row?.userId?.firstName || "") + " " + (row?.userId?.lastName || ""),
                 })
               }
-              onError={(e) => {
-                e.target.onerror = null;
-                e.target.src = defaultImage;
-              }}
             />
           ) : (
             <span className="text-white">-</span>
@@ -284,13 +331,14 @@ const Verification = (props) => {
                 data={data}
                 mapData={mapData}
                 PerPage={rowsPerPage}
-                Page={page}
+                Page={currentPage}
                 type={"server"}
               />
               <Pagination
                 component="div"
                 count={total}
-                serverPage={page}
+                serverPage={currentPage}
+                setCurrentPage={setCurrentPage}
                 type={"server"}
                 onPageChange={handleChangePage}
                 serverPerPage={rowsPerPage}
@@ -319,7 +367,7 @@ const Verification = (props) => {
         >
           <div onClick={(e) => e.stopPropagation()} style={{ maxWidth: "90vw", maxHeight: "90vh" }}>
             <div className="text-white text-center mb-2">{openSelfie.userName}</div>
-            <img
+            <AuthenticatedImage
               src={openSelfie.url}
               style={{ maxWidth: "90vw", maxHeight: "80vh", borderRadius: "8px" }}
               alt="selfie"
