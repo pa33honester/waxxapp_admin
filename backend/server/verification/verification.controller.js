@@ -6,20 +6,6 @@ const admin = require("../../util/privateKey");
 const { fileUrlFor } = require("../../util/multer");
 const { deleteFile } = require("../../util/deleteFile");
 
-const fs = require("fs");
-const path = require("path");
-
-// Resolve the on-disk path for a /private-file/<filename> URL stored
-// on a Verification row. Returns null if the URL doesn't match the
-// expected shape or the file doesn't exist on disk.
-const _resolvePrivateFilePath = (urlOrPath) => {
-  if (!urlOrPath || typeof urlOrPath !== "string") return null;
-  const filename = urlOrPath.split("/").pop();
-  if (!filename || filename.includes("..") || filename.includes("\\")) return null;
-  const filePath = path.join(__dirname, "..", "..", "private_storage", filename);
-  return fs.existsSync(filePath) ? filePath : null;
-};
-
 // Submit a selfie for verification.
 // Body (multipart): { userId, autoCheckResult? } + file field "selfie"
 //
@@ -76,33 +62,11 @@ exports.submitSelfie = async (req, res) => {
 
     const url = fileUrlFor(req.file, config.baseURL);
 
-    // H1: clean up any orphaned rejected selfie from a previous
-    // attempt. Resubmissions write a new row + file every time, so
-    // without this private_storage/ would fill with files that no
-    // doc references. Only delete files belonging to REJECTED rows
-    // — pending rows are still visible in the admin queue and must
-    // keep their files, otherwise resubmitting before admin review
-    // turns the older pending row into a dangling URL the admin
-    // panel can't render. Verified rows are kept for audit and are
-    // never touched. Best-effort; failures swallow.
-    try {
-      const prior = await Verification.find({
-        userId,
-        status: "rejected",
-      }).select("selfieFile").lean();
-      for (const p of prior) {
-        const filePath = _resolvePrivateFilePath(p?.selfieFile);
-        if (filePath) {
-          try {
-            fs.unlinkSync(filePath);
-          } catch (e) {
-            console.log("submitSelfie: stale-file cleanup:", e?.message);
-          }
-        }
-      }
-    } catch (e) {
-      console.log("submitSelfie: prior lookup error:", e?.message);
-    }
+    // Every selfie submission keeps its file on disk — pending rows
+    // need theirs for admin review, rejected rows for audit (and to
+    // let the user see what they submitted), verified rows for the
+    // permanent record. The 3-submissions-per-24h rate limit above
+    // caps how fast private_storage/ can grow.
 
     const verification = new Verification({
       userId,
