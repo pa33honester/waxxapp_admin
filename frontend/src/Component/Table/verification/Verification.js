@@ -330,8 +330,6 @@ const Verification = (props) => {
               <Table
                 data={data}
                 mapData={mapData}
-                PerPage={rowsPerPage}
-                Page={currentPage}
                 type={"server"}
               />
               <Pagination
