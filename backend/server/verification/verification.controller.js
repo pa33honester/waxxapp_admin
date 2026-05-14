@@ -79,13 +79,16 @@ exports.submitSelfie = async (req, res) => {
     // H1: clean up any orphaned rejected selfie from a previous
     // attempt. Resubmissions write a new row + file every time, so
     // without this private_storage/ would fill with files that no
-    // doc references. Only delete files belonging to ROWS that are
-    // either rejected or pending_review — never touch a verified
-    // row's file (kept for audit). Best-effort; failures swallow.
+    // doc references. Only delete files belonging to REJECTED rows
+    // — pending rows are still visible in the admin queue and must
+    // keep their files, otherwise resubmitting before admin review
+    // turns the older pending row into a dangling URL the admin
+    // panel can't render. Verified rows are kept for audit and are
+    // never touched. Best-effort; failures swallow.
     try {
       const prior = await Verification.find({
         userId,
-        status: { $in: ["rejected", "pending_review"] },
+        status: "rejected",
       }).select("selfieFile").lean();
       for (const p of prior) {
         const filePath = _resolvePrivateFilePath(p?.selfieFile);

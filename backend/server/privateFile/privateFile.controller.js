@@ -36,11 +36,16 @@ exports.serve = async (req, res) => {
       return res.status(404).json({ status: false, message: "File not found" });
     }
 
-    // Try admin path first.
+    // Try admin path first. The token may arrive either in the
+    // Authorization header (fetch with custom headers) or in a `token`
+    // query param (the admin panel's <img src> path, which cannot set
+    // headers). Header takes precedence when both are present.
     const Authorization = req.get("Authorization") || req.get("authorization");
-    if (Authorization) {
+    const queryToken = (req.query.token || "").toString().trim();
+    const rawToken = Authorization || queryToken;
+    if (rawToken) {
       try {
-        const token = Authorization.startsWith("Bearer ") ? Authorization.split(" ")[1] : Authorization;
+        const token = rawToken.startsWith("Bearer ") ? rawToken.split(" ")[1] : rawToken;
         const decoded = jwt.verify(token, config.JWT_SECRET);
         if (decoded && decoded._id) {
           // Valid admin JWT. Stream.

@@ -22,51 +22,17 @@ const STATUS_FILTERS = [
   { value: "all", label: "All" },
 ];
 
-// The selfie URL is `/private-file/<filename>`, an auth-gated route
-// that requires the `key` secret + admin JWT. A bare <img src> can't
-// send those headers, so the request 401s. We fetch the bytes with
-// the right headers and hand the <img> an object URL instead.
-const AuthenticatedImage = ({ src, fallback, alt = "", ...rest }) => {
-  const [blobUrl, setBlobUrl] = useState(null);
-  const [failed, setFailed] = useState(false);
-
-  useEffect(() => {
-    setBlobUrl(null);
-    setFailed(false);
-    if (!src) {
-      setFailed(true);
-      return;
-    }
-    let cancelled = false;
-    let createdUrl = null;
-    fetch(src, {
-      headers: {
-        key: secretKey,
-        Authorization: `${sessionStorage.getItem("token")}`,
-      },
-    })
-      .then((res) => {
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        return res.blob();
-      })
-      .then((blob) => {
-        if (cancelled) return;
-        createdUrl = URL.createObjectURL(blob);
-        setBlobUrl(createdUrl);
-      })
-      .catch(() => {
-        if (!cancelled) setFailed(true);
-      });
-    return () => {
-      cancelled = true;
-      if (createdUrl) URL.revokeObjectURL(createdUrl);
-    };
-  }, [src]);
-
-  if (failed || !blobUrl) {
-    return <img src={fallback || defaultImage} alt={alt} {...rest} />;
-  }
-  return <img src={blobUrl} alt={alt} {...rest} />;
+// `/private-file/` is auth-gated by the shared `key` + admin JWT. A
+// plain <img> can't set custom headers, so we encode both into the URL
+// itself — the backend accepts `key` and `token` query params for this
+// exact reason. Cross-origin <img> loads bypass CORS preflight (unlike
+// fetch with custom headers), which makes this both simpler and more
+// resilient than the previous fetch+blob approach.
+const buildPrivateFileUrl = (src) => {
+  if (!src) return src;
+  const token = sessionStorage.getItem("token") || "";
+  const sep = src.includes("?") ? "&" : "?";
+  return `${src}${sep}key=${encodeURIComponent(secretKey)}&token=${encodeURIComponent(token)}`;
 };
 
 const Verification = (props) => {
@@ -175,8 +141,8 @@ const Verification = (props) => {
       Cell: ({ row }) => (
         <>
           {row?.selfieFile ? (
-            <AuthenticatedImage
-              src={row.selfieFile}
+            <img
+              src={buildPrivateFileUrl(row.selfieFile)}
               height={48}
               width={48}
               style={{ borderRadius: "8px", objectFit: "cover", cursor: "pointer" }}
@@ -187,6 +153,10 @@ const Verification = (props) => {
                   userName: (row?.userId?.firstName || "") + " " + (row?.userId?.lastName || ""),
                 })
               }
+              onError={(e) => {
+                e.target.onerror = null;
+                e.target.src = defaultImage;
+              }}
             />
           ) : (
             <span className="text-white">-</span>
@@ -365,10 +335,14 @@ const Verification = (props) => {
         >
           <div onClick={(e) => e.stopPropagation()} style={{ maxWidth: "90vw", maxHeight: "90vh" }}>
             <div className="text-white text-center mb-2">{openSelfie.userName}</div>
-            <AuthenticatedImage
-              src={openSelfie.url}
+            <img
+              src={buildPrivateFileUrl(openSelfie.url)}
               style={{ maxWidth: "90vw", maxHeight: "80vh", borderRadius: "8px" }}
               alt="selfie"
+              onError={(e) => {
+                e.target.onerror = null;
+                e.target.src = defaultImage;
+              }}
             />
           </div>
         </div>
