@@ -1643,6 +1643,10 @@ exports.getProductsForUser = async (req, res) => {
             isOutOfStock: false,
           },
         },
+        // Sort BEFORE the projections strip createdAt. The previous order
+        // (sort after $project) silently no-op'd because createdAt was already
+        // gone, so products came back in arbitrary order.
+        { $sort: { createdAt: -1 } },
         {
           $lookup: {
             from: "ratings",
@@ -1716,7 +1720,6 @@ exports.getProductsForUser = async (req, res) => {
             __v: 0,
           },
         },
-        { $sort: { createdAt: -1 } },
         { $skip: (start - 1) * limit },
         { $limit: limit },
       ]),
