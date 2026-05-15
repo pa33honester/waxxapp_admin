@@ -222,6 +222,15 @@ const Order = (props) => {
                           <a
                             className="dropdown-item"
                             href={() => false}
+                            onClick={() => changeStatus('Complete')}
+                          >
+                            Complete
+                          </a>
+                        </li>
+                        <li style={{ cursor: "pointer", padding: "0px 5px" }}>
+                          <a
+                            className="dropdown-item"
+                            href={() => false}
                             onClick={() => changeStatus('Cancelled')}
 
                           // onClick={() => setStatus("Cancelled")}
@@ -441,6 +450,9 @@ const Order = (props) => {
                                   {item.status === "Delivered" && (
                                     <span className="p-2" style={{ backgroundColor: "#FFF0DF", color: "#E77B00", borderRadius: "10px", whiteSpace: "nowrap" }}>Delivered</span>
                                   )}
+                                  {item.status === "Complete" && (
+                                    <span className="p-2" style={{ backgroundColor: "#DCFCE7", color: "#16A34A", borderRadius: "10px", whiteSpace: "nowrap" }}>Complete</span>
+                                  )}
                                   {item.status === "Manual Auction Pending Payment" && (
                                     <span className="p-2" style={{ backgroundColor: "#E7EEFF", color: "#165CFF", borderRadius: "10px", whiteSpace: "nowrap" }}>
                                       Manual Auction Pending Payment
@@ -478,9 +490,19 @@ const Order = (props) => {
                                       onClick={() => editOpenDialog(item, mapData)}
                                     />
                                   ) : item.status === "Delivered" ? (
+                                    // Admin can now mark Delivered orders Complete (releases seller wallet funds).
                                     <Iconb
                                       newClass={`themeFont boxCenter userBtn fs-5`}
                                       btnIcon={<DeliveredIcon sx={{ color: '#737272' }} />}
+                                      isImage={true}
+                                      onClick={() => editOpenDialog(item, mapData)}
+                                    />
+
+                                  ) : item.status === "Complete" ? (
+                                    // Terminal state — funds already released, no further admin action.
+                                    <Iconb
+                                      newClass={`themeFont boxCenter userBtn fs-5`}
+                                      btnIcon={<DeliveredIcon sx={{ color: '#16A34A' }} />}
                                       {...disabledIconProps}
                                     />
 

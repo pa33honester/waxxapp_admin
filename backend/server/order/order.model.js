@@ -31,6 +31,7 @@ const orderSchema = new mongoose.Schema(
             "Confirmed",
             "Out Of Delivery",
             "Delivered",
+            "Complete",
             "Cancelled",
             "Manual Auction Pending Payment",
             "Manual Auction Cancelled",

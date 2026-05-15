@@ -5,7 +5,7 @@ import {
   OPEN_DIALOGUE,
 } from "../../store/dialogue/dialogue.type";
 import { connect, useDispatch, useSelector } from "react-redux";
-import { orderUpdate } from "../../store/order/order.action";
+import { orderUpdate, completeOrder } from "../../store/order/order.action";
 import Input from "../../extra/Input";
 
 const EditOrder = (props) => {
@@ -36,6 +36,7 @@ const EditOrder = (props) => {
     { name: "Confirmed", value: "Confirmed" },
     { name: "Out Of Delivery", value: "Out Of Delivery" },
     { name: "Delivered", value: "Delivered" },
+    { name: "Complete", value: "Complete" },
     { name: "Cancelled", value: "Cancelled" },
     // { name: "Manual Auction Pending Payment", value: "Manual Auction Pending Payment" },
     // { name: "Manual Auction Cancelled", value: "Manual Auction Cancelled" },
@@ -52,6 +53,10 @@ const EditOrder = (props) => {
     }
     if (dialogueData?.data?.status === "Out Of Delivery") {
       return option.value === "Out Of Delivery" || option.value === "Delivered";
+    }
+    if (dialogueData?.data?.status === "Delivered") {
+      // Admin-only: release funds to seller wallet.
+      return option.value === "Delivered" || option.value === "Complete";
     }
     return true; // Default case, show all options
   });
@@ -76,18 +81,21 @@ const EditOrder = (props) => {
         if (!trackingLink) error.trackingLink = "Tracking Link is Required !";
         return setError({ ...error });
       } else {
-        
         const data = {
           deliveredServiceName,
           trackingId,
           trackingLink,
         };
         props.orderUpdate(userId, orderId, status, itemId, data);
-        
+
         dispatch({ type: CLOSE_DIALOGUE });
       }
+    } else if (status === "Complete") {
+      // Admin-only release-funds action — hits the dedicated endpoint that
+      // creates the SellerWallet deposit + increments netPayout.
+      props.completeOrder(userId, orderId, itemId);
+      dispatch({ type: CLOSE_DIALOGUE });
     } else {
-      
       props.orderUpdate(userId, orderId, status, itemId);
       dispatch({ type: CLOSE_DIALOGUE });
     }
@@ -251,4 +259,4 @@ const EditOrder = (props) => {
   );
 };
 
-export default connect(null, { orderUpdate })(EditOrder);
+export default connect(null, { orderUpdate, completeOrder })(EditOrder);

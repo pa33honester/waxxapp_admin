@@ -15,6 +15,12 @@ route.patch("/updateOrder", checkAccessWithSecretKey(), orderController.updateOr
 //cancel the order by user
 route.patch("/cancelOrderByUser", checkAccessWithSecretKey(), orderController.cancelOrderByUser);
 
+//buyer confirms they received the item (Out Of Delivery -> Delivered). Does NOT credit wallet.
+route.patch("/acceptDeliveryByBuyer", checkAccessWithSecretKey(), orderController.acceptDeliveryByBuyer);
+
+//admin marks order Complete (Delivered -> Complete). This is when the seller wallet is credited.
+route.patch("/completeOrderByAdmin", checkAccessWithSecretKey(), orderController.completeOrderByAdmin);
+
 //get status wise order counts for seller
 route.get("/orderCountForSeller", checkAccessWithSecretKey(), orderController.orderCountForSeller);
 

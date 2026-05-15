@@ -46,6 +46,27 @@ export const orderUpdate = (userId,orderId,status,itemId,data) => (dispatch) => 
     .catch((error) => setToast("error", error));
 };
 
+// Admin-only "release funds" action. Hits the dedicated endpoint that creates
+// the SellerWallet deposit row and increments seller.netPayout. The reducer
+// payload mirrors orderUpdate so the existing UPDATE_ORDER case can swap the
+// row's status to "Complete" without a new case.
+export const completeOrder = (userId, orderId, itemId) => (dispatch) => {
+  axios
+    .patch(`order/completeOrderByAdmin?orderId=${orderId}&itemId=${itemId}`)
+    .then((res) => {
+      if (res.data.status) {
+        dispatch({
+          type: ActionType.UPDATE_ORDER,
+          payload: { updateOrder: res.data.data, userId, orderId, status: "Complete", itemId },
+        });
+        setToast("success", res.data.message || "Order marked Complete. Funds released.");
+      } else {
+        setToast("error", res.data.message);
+      }
+    })
+    .catch((error) => setToast("error", error));
+};
+
 // get order details
 
 export const getOrderDetail = (id) => (dispatch) =>{

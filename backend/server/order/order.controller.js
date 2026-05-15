@@ -374,6 +374,12 @@ exports.updateOrder = async (req, res) => {
           message: "This order is already Delivered, after completion you can't update it to Pending",
         });
 
+      if (itemToUpdate.status === "Complete")
+        return res.status(200).json({
+          status: false,
+          message: "This order is already Complete, you can't update it to Pending",
+        });
+
       if (itemToUpdate.status === "Cancelled")
         return res.status(200).json({
           status: false,
@@ -396,6 +402,12 @@ exports.updateOrder = async (req, res) => {
         return res.status(200).json({
           status: false,
           message: "This order is already Delivered, after completion you can't update it to Confirmed",
+        });
+
+      if (itemToUpdate.status === "Complete")
+        return res.status(200).json({
+          status: false,
+          message: "This order is already Complete, you can't update it to Confirmed",
         });
 
       if (itemToUpdate.status === "Cancelled")
@@ -483,6 +495,12 @@ exports.updateOrder = async (req, res) => {
           message: "This order is already Delivered, after completion you can't update it to Out Of Delivery",
         });
 
+      if (itemToUpdate.status === "Complete")
+        return res.status(200).json({
+          status: false,
+          message: "This order is already Complete, you can't update it to Out Of Delivery",
+        });
+
       if (itemToUpdate.status === "Cancelled")
         return res.status(200).json({
           status: false,
@@ -557,6 +575,12 @@ exports.updateOrder = async (req, res) => {
     } else if (req.query.status === "Delivered") {
       if (itemToUpdate.status === "Delivered") return res.status(200).json({ status: false, message: "This order is already Delivered" });
 
+      if (itemToUpdate.status === "Complete")
+        return res.status(200).json({
+          status: false,
+          message: "This order is already Complete, you can't update it to Delivered",
+        });
+
       if (itemToUpdate.status === "Cancelled")
         return res.status(200).json({
           status: false,
@@ -569,8 +593,7 @@ exports.updateOrder = async (req, res) => {
           message: "This order is not Out Of Delivery , after Out Of Delivery you can update it to Delivered",
         });
 
-      const sellerEarning = itemToUpdate.purchasedTimeProductPrice * itemToUpdate.productQuantity - itemToUpdate?.commissionPerProductQuantity;
-
+      // Wallet credit moved to the Complete branch (admin-released). Delivered is now a pure status transition.
       const [updatedOrder] = await Promise.all([
         Order.findOneAndUpdate(
           { _id: findOrder._id, "items._id": itemToUpdate._id },
@@ -582,27 +605,6 @@ exports.updateOrder = async (req, res) => {
           { new: true }
         ),
         Product.findOneAndUpdate({ _id: itemToUpdate.productId }, { $inc: { sold: itemToUpdate.productQuantity } }), //update the "sold" field in the product model by incrementing it by the quantity ordered
-        new SellerWallet({
-          orderId: findOrder._id,
-          productId: itemToUpdate.productId,
-          itemId: itemToUpdate._id,
-          sellerId: itemToUpdate.sellerId,
-          amount: sellerEarning + itemToUpdate?.purchasedTimeShippingCharges,
-          commissionPerProductQuantity: itemToUpdate?.commissionPerProductQuantity,
-          shippingCharges: itemToUpdate?.purchasedTimeShippingCharges,
-          transactionType: 1,
-          date: new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" }),
-        }).save(),
-        Seller.updateOne(
-          {
-            _id: itemToUpdate.sellerId,
-          },
-          {
-            $inc: {
-              netPayout: sellerEarning + itemToUpdate?.purchasedTimeShippingCharges,
-            },
-          }
-        ),
       ]);
 
       const data = await Order.findOne({ _id: updatedOrder._id })
@@ -668,6 +670,12 @@ exports.updateOrder = async (req, res) => {
         return res.status(200).json({
           status: false,
           message: "This order is already Delivered , you can't update it to Cancelled",
+        });
+
+      if (itemToUpdate.status === "Complete")
+        return res.status(200).json({
+          status: false,
+          message: "This order is already Complete, you can't update it to Cancelled",
         });
 
       if (itemToUpdate.status === "Cancelled")
@@ -2168,5 +2176,200 @@ exports.modifyOrderItemStatus = async (req, res) => {
   } catch (error) {
     console.error("Error in updateOrderItemStatus:", error);
     return res.status(500).json({ status: false, message: "Internal Server Error" });
+  }
+};
+
+// Buyer confirms they received the item. Out Of Delivery -> Delivered.
+// Wallet credit does NOT happen here — that fires only when admin marks Complete.
+exports.acceptDeliveryByBuyer = async (req, res) => {
+  try {
+    if (!req.query.userId || !req.query.orderId || !req.query.itemId) {
+      return res.status(200).json({ status: false, message: "Oops ! Invalid details!" });
+    }
+
+    const [user, findOrder] = await Promise.all([User.findById(req.query.userId), Order.findById(req.query.orderId)]);
+
+    if (!user) {
+      return res.status(200).json({ status: false, message: "User does not found!!" });
+    }
+
+    if (user.isBlock) {
+      return res.status(200).json({ status: false, message: "you are blocked by the admin." });
+    }
+
+    if (!findOrder) {
+      return res.status(200).json({ status: false, message: "Order does not found." });
+    }
+
+    if (findOrder.userId.toString() !== user._id.toString()) {
+      return res.status(200).json({ status: false, message: "This order does not belongs to your account." });
+    }
+
+    const itemToUpdate = findOrder.items.find((item) => item._id.toString() === req.query.itemId.toString());
+    if (!itemToUpdate) {
+      return res.status(200).json({ status: false, message: "Item does not found in the order." });
+    }
+
+    if (itemToUpdate.status !== "Out Of Delivery") {
+      return res.status(200).json({
+        status: false,
+        message: "Order is not out for delivery — you can't accept it yet.",
+      });
+    }
+
+    const [updatedOrder] = await Promise.all([
+      Order.findOneAndUpdate(
+        { _id: findOrder._id, "items._id": itemToUpdate._id },
+        { $set: { "items.$.status": "Delivered" } },
+        { new: true }
+      ),
+      Product.findOneAndUpdate({ _id: itemToUpdate.productId }, { $inc: { sold: itemToUpdate.productQuantity } }),
+    ]);
+
+    const data = await Order.findOne({ _id: updatedOrder._id })
+      .populate({ path: "items.productId", select: "productName mainImage _id" })
+      .populate({ path: "items.sellerId", select: "firstName lastName businessName fcmToken isBlock image" })
+      .populate({ path: "userId", select: "firstName lastName uniqueId" });
+
+    res.status(200).json({
+      status: true,
+      message: "Delivery accepted. Order is now Delivered — awaiting admin completion.",
+      data: data,
+    });
+
+    // notify seller
+    const seller = await Seller.findById(itemToUpdate.sellerId);
+    if (seller && !seller.isBlock && seller.fcmToken) {
+      const adminPromise = await admin;
+      const payload = {
+        token: seller.fcmToken,
+        notification: {
+          title: "📬 Buyer confirmed delivery",
+          body: "The buyer marked their order as delivered. Funds will release once admin marks it Complete.",
+        },
+      };
+      adminPromise
+        .messaging()
+        .send(payload)
+        .then(async () => {
+          const notification = new Notification();
+          notification.sellerId = itemToUpdate.sellerId;
+          notification.userId = findOrder.userId;
+          notification.image = seller.image;
+          notification.productId = itemToUpdate.productId;
+          notification.message = payload.notification.title;
+          notification.notificationType = 2;
+          notification.date = new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" });
+          await notification.save();
+        })
+        .catch((error) => {
+          console.log("Error sending seller notification: ", error);
+        });
+    }
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ status: false, message: error.message || "Internal Server Error" });
+  }
+};
+
+// Admin-only: Delivered -> Complete. This is the moment the seller wallet is credited.
+// Trust boundary is the admin panel — see plan §1d (no JWT role middleware exists in this codebase).
+exports.completeOrderByAdmin = async (req, res) => {
+  try {
+    if (!req.query.orderId || !req.query.itemId) {
+      return res.status(200).json({ status: false, message: "Oops ! Invalid details!" });
+    }
+
+    const findOrder = await Order.findById(req.query.orderId);
+    if (!findOrder) {
+      return res.status(200).json({ status: false, message: "Order does not found." });
+    }
+
+    const itemToUpdate = findOrder.items.find((item) => item._id.toString() === req.query.itemId.toString());
+    if (!itemToUpdate) {
+      return res.status(200).json({ status: false, message: "Item does not found in the order." });
+    }
+
+    // Idempotency guard — the only protection against double-credit on rapid double-click.
+    if (itemToUpdate.status === "Complete") {
+      return res.status(200).json({ status: false, message: "This order is already Complete." });
+    }
+
+    if (itemToUpdate.status !== "Delivered") {
+      return res.status(200).json({
+        status: false,
+        message: "Order must be Delivered before it can be marked Complete.",
+      });
+    }
+
+    const sellerEarning =
+      itemToUpdate.purchasedTimeProductPrice * itemToUpdate.productQuantity - itemToUpdate?.commissionPerProductQuantity;
+
+    const [updatedOrder] = await Promise.all([
+      Order.findOneAndUpdate(
+        { _id: findOrder._id, "items._id": itemToUpdate._id },
+        { $set: { "items.$.status": "Complete" } },
+        { new: true }
+      ),
+      new SellerWallet({
+        orderId: findOrder._id,
+        productId: itemToUpdate.productId,
+        itemId: itemToUpdate._id,
+        sellerId: itemToUpdate.sellerId,
+        amount: sellerEarning + itemToUpdate?.purchasedTimeShippingCharges,
+        commissionPerProductQuantity: itemToUpdate?.commissionPerProductQuantity,
+        shippingCharges: itemToUpdate?.purchasedTimeShippingCharges,
+        transactionType: 1,
+        date: new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" }),
+      }).save(),
+      Seller.updateOne(
+        { _id: itemToUpdate.sellerId },
+        { $inc: { netPayout: sellerEarning + itemToUpdate?.purchasedTimeShippingCharges } }
+      ),
+    ]);
+
+    const data = await Order.findOne({ _id: updatedOrder._id })
+      .populate({ path: "items.productId", select: "productName mainImage _id" })
+      .populate({ path: "items.sellerId", select: "firstName lastName businessName fcmToken isBlock image" })
+      .populate({ path: "userId", select: "firstName lastName uniqueId" });
+
+    res.status(200).json({
+      status: true,
+      message: "Order marked Complete. Funds released to seller wallet.",
+      data: data,
+    });
+
+    // notify seller
+    const seller = await Seller.findById(itemToUpdate.sellerId);
+    if (seller && !seller.isBlock && seller.fcmToken) {
+      const adminPromise = await admin;
+      const payload = {
+        token: seller.fcmToken,
+        notification: {
+          title: "💰 Funds released to your wallet",
+          body: "Admin has marked your order as Complete. The earnings are now available in your wallet.",
+        },
+      };
+      adminPromise
+        .messaging()
+        .send(payload)
+        .then(async () => {
+          const notification = new Notification();
+          notification.sellerId = itemToUpdate.sellerId;
+          notification.userId = findOrder.userId;
+          notification.image = seller.image;
+          notification.productId = itemToUpdate.productId;
+          notification.message = payload.notification.title;
+          notification.notificationType = 2;
+          notification.date = new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" });
+          await notification.save();
+        })
+        .catch((error) => {
+          console.log("Error sending seller notification: ", error);
+        });
+    }
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ status: false, message: error.message || "Internal Server Error" });
   }
 };
