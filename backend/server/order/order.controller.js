@@ -1881,6 +1881,7 @@ exports.orderDetailsForUser = async (req, res) => {
       "Confirmed",
       "Out Of Delivery",
       "Delivered",
+      "Complete",
       "Cancelled",
       "Manual Auction Pending Payment",
       "Manual Auction Cancelled",
@@ -2009,6 +2010,9 @@ exports.orderDetailsForUser = async (req, res) => {
                     _id: "$$prod._id",
                     productName: "$$prod.productName",
                     mainImage: "$$prod.mainImage",
+                    // Carried for the buyer "Buy it again" gating on Complete orders.
+                    quantity: "$$prod.quantity",
+                    isOutOfStock: "$$prod.isOutOfStock",
                   },
                 },
               },
