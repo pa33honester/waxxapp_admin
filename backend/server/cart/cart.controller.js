@@ -157,6 +157,10 @@ exports.addToCart = async (req, res) => {
           shippingCharges: 1,
           deliveryType: 1,
           deliveryOptions: 1,
+          // Surface the seller-attached promo code IDs so the buyer
+          // checkout can filter the admin promo list down to only the
+          // codes the seller opted this product into.
+          promoCodes: 1,
         },
       });
 
@@ -415,6 +419,7 @@ exports.getCartProduct = async (req, res) => {
         shippingCharges: 1,
         deliveryType: 1,
         deliveryOptions: 1,
+        promoCodes: 1,
       },
     });
 
@@ -497,7 +502,7 @@ exports.updateDeliveryOption = async (req, res) => {
 
     const data = await cart.populate({
       path: "items.productId",
-      select: { productName: 1, mainImage: 1, _id: 1, shippingCharges: 1, deliveryType: 1, deliveryOptions: 1 },
+      select: { productName: 1, mainImage: 1, _id: 1, shippingCharges: 1, deliveryType: 1, deliveryOptions: 1, promoCodes: 1 },
     });
 
     return res.status(200).json({
