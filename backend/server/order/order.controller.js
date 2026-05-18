@@ -1351,6 +1351,77 @@ exports.orderDetailsForSeller = async (req, res) => {
         message: `Order history for seller with status ${req.query.status}`,
         orders: orderWithProducts,
       });
+    } else if (req.query.status === "Complete") {
+      const order = await Order.aggregate([
+        { $unwind: "$items" },
+        {
+          $addFields: {
+            "items.analyticDate": {
+              $toDate: {
+                $arrayElemAt: [{ $split: ["$items.date", ","] }, 0],
+              },
+            },
+          },
+        },
+        {
+          $match: {
+            "items.sellerId": seller._id,
+            "items.status": "Complete",
+            "items.analyticDate": { $gte: start_date, $lte: end_date },
+          },
+        },
+        {
+          $lookup: {
+            from: "users",
+            localField: "userId",
+            foreignField: "_id",
+            as: "user",
+          },
+        },
+        { $unwind: "$user" },
+        {
+          $group: {
+            _id: "$_id",
+            items: { $push: "$items" },
+            shippingAddress: { $first: "$shippingAddress" },
+            orderId: { $first: "$orderId" },
+            createdAt: { $first: "$createdAt" },
+            paymentGateway: { $first: "$paymentGateway" },
+            paymentStatus: { $first: "$paymentStatus" },
+            userFirstName: { $first: "$user.firstName" },
+            userLastName: { $first: "$user.lastName" },
+            userMobileNumber: { $first: "$user.mobileNumber" },
+            userId: { $first: "$user._id" },
+          },
+        },
+        {
+          $project: {
+            _id: 1,
+            items: 1,
+            shippingAddress: 1,
+            orderId: 1,
+            paymentGateway: 1,
+            paymentStatus: 1,
+            userFirstName: 1,
+            userLastName: 1,
+            userMobileNumber: 1,
+            userId: 1,
+            createdAt: 1,
+          },
+        },
+        { $sort: { createdAt: -1 } },
+      ]);
+
+      const orderWithProducts = await Order.populate(order, {
+        path: "items.productId",
+        select: "productName mainImage _id",
+      });
+
+      return res.status(200).json({
+        status: true,
+        message: `Order history for seller with status ${req.query.status}`,
+        orders: orderWithProducts,
+      });
     } else if (req.query.status === "Cancelled") {
       const order = await Order.aggregate([
         {
@@ -1445,7 +1516,7 @@ exports.orderDetailsForSeller = async (req, res) => {
           $match: {
             "items.sellerId": seller._id,
             "items.status": {
-              $in: ["Pending", "Confirmed", "Out Of Delivery", "Delivered", "Cancelled"],
+              $in: ["Pending", "Confirmed", "Out Of Delivery", "Delivered", "Complete", "Cancelled"],
             },
             "items.analyticDate": {
               $gte: start_date,
@@ -1549,12 +1620,14 @@ exports.ordersOfUser = async (req, res) => {
       statusQuery = { "items.status": "Out Of Delivery" };
     } else if (req.query.status === "Delivered") {
       statusQuery = { "items.status": "Delivered" };
+    } else if (req.query.status === "Complete") {
+      statusQuery = { "items.status": "Complete" };
     } else if (req.query.status === "Cancelled") {
       statusQuery = { "items.status": "Cancelled" };
     } else if (req.query.status === "All") {
       statusQuery = {
         "items.status": {
-          $in: ["Pending", "Confirmed", "Out Of Delivery", "Delivered", "Cancelled"],
+          $in: ["Pending", "Confirmed", "Out Of Delivery", "Delivered", "Complete", "Cancelled"],
         },
       };
     } else {
@@ -1605,6 +1678,7 @@ exports.ordersOfSeller = async (req, res) => {
       "Confirmed",
       "Out Of Delivery",
       "Delivered",
+      "Complete",
       "Cancelled",
       "Manual Auction Pending Payment",
       "Manual Auction Cancelled",
