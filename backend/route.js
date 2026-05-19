@@ -76,6 +76,10 @@ app.use("/payment/paystack", PaystackRoute);
 const SupportRoute = require("./server/support/support.route");
 app.use("/support", SupportRoute);
 
+//Buyer-seller product chat (scoped per product).
+const ProductChatRoute = require("./server/productChat/productChat.route");
+app.use("/productChat", ProductChatRoute);
+
 //PromoCode Route
 const PromoCodeRoute = require("./server/promoCode/promoCode.route");
 app.use("/promoCode", PromoCodeRoute);

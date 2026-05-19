@@ -582,6 +582,82 @@ io.on("connect", async (socket) => {
   });
   // ========= End customer-support chat rooms =========
 
+  // ========= Product chat rooms (buyer ↔ seller, scoped per product) =========
+  // Room names: productChatRoom:<conversationId>, productChatInbox:<sellerId>
+
+  socket.on("productChatJoin", (data) => {
+    try {
+      const { conversationId } = typeof data === "string" ? JSON.parse(data) : data || {};
+      if (!conversationId) return;
+      socket.join("productChatRoom:" + conversationId);
+    } catch (err) {
+      console.error("productChatJoin error:", err.message);
+    }
+  });
+
+  socket.on("productChatLeave", (data) => {
+    try {
+      const { conversationId } = typeof data === "string" ? JSON.parse(data) : data || {};
+      if (!conversationId) return;
+      socket.leave("productChatRoom:" + conversationId);
+    } catch (err) {
+      console.error("productChatLeave error:", err.message);
+    }
+  });
+
+  socket.on("productChatInboxJoin", (data) => {
+    try {
+      const { sellerId } = typeof data === "string" ? JSON.parse(data) : data || {};
+      if (!sellerId) return;
+      socket.join("productChatInbox:" + sellerId);
+    } catch (err) {
+      console.error("productChatInboxJoin error:", err.message);
+    }
+  });
+
+  socket.on("productChatInboxLeave", (data) => {
+    try {
+      const { sellerId } = typeof data === "string" ? JSON.parse(data) : data || {};
+      if (!sellerId) return;
+      socket.leave("productChatInbox:" + sellerId);
+    } catch (err) {
+      console.error("productChatInboxLeave error:", err.message);
+    }
+  });
+
+  socket.on("productChatMarkRead", async (data) => {
+    try {
+      const { conversationId, readerRole } = typeof data === "string" ? JSON.parse(data) : data || {};
+      if (!conversationId || !readerRole) return;
+
+      const ProductChatConversation = require("./server/productChat/productChat.model");
+      const conv = await ProductChatConversation.findById(conversationId);
+      if (!conv) return;
+
+      const oppositeSide = readerRole === "buyer" ? "seller" : "buyer";
+      let changed = false;
+      conv.messages.forEach((m) => {
+        if (m.senderType === oppositeSide && !m.isRead) {
+          m.isRead = true;
+          changed = true;
+        }
+      });
+      if (readerRole === "buyer" && conv.unreadByBuyer > 0) { conv.unreadByBuyer = 0; changed = true; }
+      if (readerRole === "seller" && conv.unreadBySeller > 0) { conv.unreadBySeller = 0; changed = true; }
+
+      if (changed) await conv.save();
+
+      io.in("productChatRoom:" + conversationId).emit("productChatRead", { conversationId, readerRole });
+      io.in("productChatInbox:" + conv.sellerId.toString()).emit("productChatInboxUpdated", {
+        conversationId,
+        unreadBySeller: conv.unreadBySeller,
+      });
+    } catch (err) {
+      console.error("productChatMarkRead error:", err.message);
+    }
+  });
+  // ========= End product chat rooms =========
+
   socket.on("endLiveSeller", async (data) => {
     console.log("data in endLiveSeller: ", data);
 
