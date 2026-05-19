@@ -74,6 +74,9 @@ route.get("/selectedProducts", checkAccessWithSecretKey(), ProductController.get
 //get category wise all products for user (gallery page)
 route.get("/categorywiseAllProducts", checkAccessWithSecretKey(), ProductController.getProductsForUser);
 
+//get trending (30 most recent) products for user (Trending tab on home page)
+route.get("/trendingProducts", checkAccessWithSecretKey(), ProductController.getTrendingProducts);
+
 //get product details for user
 route.get("/detail", checkAccessWithSecretKey(), ProductController.productDetail);
 

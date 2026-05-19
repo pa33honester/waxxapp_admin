@@ -1749,6 +1749,77 @@ exports.getProductsForUser = async (req, res) => {
   }
 };
 
+// get trending products for user (30 most recently added approved products, cross-category)
+exports.getTrendingProducts = async (req, res) => {
+  try {
+    if (!req.query.userId) {
+      return res.status(200).json({ status: false, message: "userId is required." });
+    }
+
+    const userId = new mongoose.Types.ObjectId(req.query.userId);
+    const start = parseInt(req.query.start) || 1;
+    const limit = parseInt(req.query.limit) || 30;
+
+    const data = await Product.aggregate([
+      { $match: { createStatus: "Approved", isOutOfStock: false } },
+      { $sort: { createdAt: -1 } },
+      {
+        $lookup: {
+          from: "ratings",
+          let: { product: "$_id" },
+          pipeline: [
+            { $match: { $expr: { $eq: ["$$product", "$productId"] } } },
+            { $group: { _id: "$productId", totalUser: { $sum: 1 }, avgRating: { $avg: "$rating" } } },
+          ],
+          as: "rating",
+        },
+      },
+      {
+        $lookup: {
+          from: "favorites",
+          let: { productId: "$_id", userId: userId },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $and: [{ $eq: ["$productId", "$$productId"] }, { $eq: ["$userId", "$$userId"] }],
+                },
+              },
+            },
+          ],
+          as: "isFavorite",
+        },
+      },
+      {
+        $project: {
+          seller: 1, productName: 1, productCode: 1, description: 1, price: 1, review: 1,
+          mainImage: 1, images: 1, shippingCharges: 1, quantity: 1, sold: 1, isOutOfStock: 1,
+          category: 1, subCategory: 1, rating: 1, auctionEndDate: 1, productSaleType: 1,
+          createStatus: 1, updateStatus: 1,
+          isFavorite: { $cond: [{ $eq: [{ $size: "$isFavorite" }, 0] }, false, true] },
+        },
+      },
+      { $project: { createdAt: 0, updatedAt: 0, __v: 0 } },
+      { $skip: (start - 1) * limit },
+      { $limit: limit },
+    ]);
+
+    const data_ = await Product.populate(data, [
+      { path: "category", select: "name" },
+      { path: "subCategory", select: "name" },
+    ]);
+
+    return res.status(200).json({
+      status: true,
+      message: "Retrieved trending products successfully.",
+      product: data_,
+    });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({ status: true, error: error.message || "Internal Server Error" });
+  }
+};
+
 //search products for user
 exports.search = async (req, res) => {
   try {
