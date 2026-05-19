@@ -36,6 +36,8 @@ exports.initiateCashOut = async (req, res) => {
       return res.status(403).json({ status: false, message: "You are blocked by admin!" });
     }
 
+    const settingJSON = global.settingJSON;
+
     if (!settingJSON) {
       return res.status(200).json({ status: false, message: "Settings not found." });
     }
@@ -55,11 +57,6 @@ exports.initiateCashOut = async (req, res) => {
       });
     }
 
-    res.status(200).json({
-      status: true,
-      message: "Your withdrawal request has been successfully submitted.",
-    });
-
     const uniqueId = generateHistoryUniqueId();
     const trimmedPaymentGateway = paymentGateway.trim();
     const formattedDetails = paymentDetails.map((detail) => detail.replace("[", "").replace("]", ""));
@@ -78,6 +75,11 @@ exports.initiateCashOut = async (req, res) => {
         requestDate: new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" }),
       }),
     ]);
+
+    res.status(200).json({
+      status: true,
+      message: "Your withdrawal request has been successfully submitted.",
+    });
 
     if (seller.fcmToken !== null) {
       const payload = {
@@ -240,14 +242,7 @@ exports.approveWithdrawalRequest = async (req, res) => {
       return res.status(200).json({ status: false, message: "Insufficient balance to approve this withdrawal request." });
     }
 
-    res.status(200).json({
-      status: true,
-      message: "Withdrawal request accepted and processed.",
-    });
-
-    const updates = [];
-
-    updates.push(
+    await Promise.all([
       Seller.updateOne(
         { _id: personId, netPayout: { $gte: request.amount } },
         {
@@ -262,10 +257,7 @@ exports.approveWithdrawalRequest = async (req, res) => {
         sellerId: sellerAccount._id,
         amount: request.amount,
         date: new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" }),
-      })
-    );
-
-    updates.push(
+      }),
       WithDrawRequest.updateOne(
         { _id: request._id },
         {
@@ -274,10 +266,13 @@ exports.approveWithdrawalRequest = async (req, res) => {
             acceptOrDeclineDate: new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" }),
           },
         }
-      )
-    );
+      ),
+    ]);
 
-    await Promise.all(updates);
+    res.status(200).json({
+      status: true,
+      message: "Withdrawal request accepted and processed.",
+    });
 
     if (sellerAccount.fcmToken !== null) {
       const payload = {
