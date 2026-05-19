@@ -1822,10 +1822,12 @@ exports.getOrders = async (req, res) => {
       statusQuery = { "items.status": "Auction Cancelle" };
     } else if (status === "Auction Pending Payment") {
       statusQuery = { "items.status": "Auction Pending Payment" };
+    } else if (status === "Complete") {
+      statusQuery = { "items.status": "Complete" };
     } else if (status === "All") {
       statusQuery = {
         "items.status": {
-          $in: ["Pending", "Confirmed", "Out Of Delivery", "Delivered", "Cancelled", "Manual Auction Pending Payment", "Manual Auction Cancelled", "Auction Pending Payment", "Auction Cancelled"],
+          $in: ["Pending", "Confirmed", "Out Of Delivery", "Delivered", "Complete", "Cancelled", "Manual Auction Pending Payment", "Manual Auction Cancelled", "Auction Pending Payment", "Auction Cancelled"],
         },
       };
     } else {
@@ -1845,7 +1847,7 @@ exports.getOrders = async (req, res) => {
         })
         .populate({
           path: "items.sellerId",
-          select: "businessName",
+          select: "firstName lastName businessName businessTag",
         })
         .populate({
           path: "userId",

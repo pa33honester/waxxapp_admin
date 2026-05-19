@@ -316,7 +316,8 @@ const Order = (props) => {
                     <tr>
                       <th className="fw-bold py-3">No</th>
                       <th className="fw-bold py-3" style={{ width: "330px" }}>Order Id</th>
-                      <th className="fw-bold py-3" style={{ width: "330px" }}>User Info</th>
+                      <th className="fw-bold py-3" style={{ width: "330px" }}>Buyer (Sent Money)</th>
+                      <th className="fw-bold py-3" style={{ width: "330px" }}>Seller (Received Money)</th>
                       <th className="fw-bold py-3" style={{ width: "520px" }}>Items</th>
                       <th className="fw-bold py-3" style={{ width: "380px" }}>{`Price (${setting?.currency?.symbol || ' '})`}</th>
                       <th className="fw-bold py-3" style={{ width: "330px" }}>{`Shipping Charge (${setting?.currency?.symbol || ' '})`}</th>
@@ -348,7 +349,7 @@ const Order = (props) => {
                                   </b>
                                 </span>
                               </td>
-                              {/* User Info */}
+                              {/* Buyer (sent money) */}
                               <td style={{ width: "350px" }}>
                                 <div>
                                   <span className="tableBoldFont">
@@ -365,6 +366,33 @@ const Order = (props) => {
                                   <span className="text-white fw-normal" style={{ whiteSpace: "nowrap" }}>
                                     uniqueId : ({mapData?.userId?.uniqueId ? mapData.userId.uniqueId : "-"})
                                   </span>
+                                </div>
+                              </td>
+                              {/* Seller (received money) */}
+                              <td style={{ width: "350px" }}>
+                                <div>
+                                  <span className="tableBoldFont">
+                                    <b className="fw-normal text-white">
+                                      {item?.sellerId?.firstName || ""}
+                                      {item?.sellerId?.lastName ? " " + item.sellerId.lastName : ""}
+                                    </b>
+                                  </span>
+                                  {item?.sellerId?.businessName && (
+                                    <>
+                                      <br />
+                                      <span className="text-white fw-normal" style={{ whiteSpace: "nowrap" }}>
+                                        {item.sellerId.businessName}
+                                      </span>
+                                    </>
+                                  )}
+                                  {item?.sellerId?.businessTag && (
+                                    <>
+                                      <br />
+                                      <span style={{ color: "#a0a0a0", fontSize: "12px", whiteSpace: "nowrap" }}>
+                                        @{item.sellerId.businessTag}
+                                      </span>
+                                    </>
+                                  )}
                                 </div>
                               </td>
                               {/* Item/Image */}
