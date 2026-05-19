@@ -3,6 +3,7 @@ const SellerWallet = require("./sellerWallet.model");
 //import model
 const Seller = require("../seller/seller.model");
 const Order = require("../order/order.model");
+const WithDrawRequest = require("../withdrawRequest/withdrawRequest.model");
 
 //mongoose
 const mongoose = require("mongoose");
@@ -349,5 +350,79 @@ exports.retrieveSellerWalletHistory = async (req, res) => {
   } catch (error) {
     console.log(error);
     return res.status(500).json({ status: false, error: error.message || "Internal Server Error" });
+  }
+};
+
+//wallet summary dashboard ( seller )
+exports.getAllAmount = async (req, res) => {
+  try {
+    const { sellerId } = req.query;
+
+    if (!sellerId) {
+      return res.status(200).json({ status: false, message: "sellerId is required." });
+    }
+
+    const sellerObjId = new mongoose.Types.ObjectId(sellerId);
+
+    const [seller, orderAmounts, withdrawalPending, commissionStats] = await Promise.all([
+      Seller.findOne({ _id: sellerObjId }).select("_id isBlock netPayout amountWithdrawn").lean(),
+      Order.aggregate([
+        { $unwind: "$items" },
+        {
+          $match: {
+            "items.sellerId": sellerObjId,
+            "items.status": { $in: ["Pending", "Delivered"] },
+          },
+        },
+        {
+          $group: {
+            _id: "$items.status",
+            total: {
+              $sum: {
+                $add: [
+                  { $multiply: ["$items.purchasedTimeProductPrice", "$items.productQuantity"] },
+                  { $ifNull: ["$items.purchasedTimeShippingCharges", 0] },
+                  { $multiply: [{ $ifNull: ["$items.commissionPerProductQuantity", 0] }, -1] },
+                ],
+              },
+            },
+          },
+        },
+      ]),
+      WithDrawRequest.aggregate([
+        { $match: { sellerId: sellerObjId, status: 1 } },
+        { $group: { _id: null, total: { $sum: "$amount" } } },
+      ]),
+      SellerWallet.aggregate([
+        { $match: { sellerId: sellerObjId, transactionType: 1 } },
+        { $group: { _id: null, totalCommission: { $sum: "$commissionPerProductQuantity" } } },
+      ]),
+    ]);
+
+    if (!seller) {
+      return res.status(200).json({ status: false, message: "Seller not found." });
+    }
+
+    if (seller.isBlock) {
+      return res.status(200).json({ status: false, message: "Your account is blocked by the admin." });
+    }
+
+    const earningAmount = (seller.netPayout || 0) + (seller.amountWithdrawn || 0);
+
+    const pendingResult = orderAmounts.find((r) => r._id === "Pending");
+    const deliveredResult = orderAmounts.find((r) => r._id === "Delivered");
+
+    return res.status(200).json({
+      status: true,
+      message: "Success",
+      earningAmount,
+      pendingAmount: pendingResult ? pendingResult.total : 0,
+      pendingWithdrawbleAmount: deliveredResult ? deliveredResult.total : 0,
+      pendingWithdrawbleRequestedAmount: withdrawalPending.length > 0 ? withdrawalPending[0].total : 0,
+      totalCommissionGiven: commissionStats.length > 0 ? commissionStats[0].totalCommission : 0,
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ status: false, message: error.message || "Internal Server Error" });
   }
 };

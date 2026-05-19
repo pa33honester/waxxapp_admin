@@ -15,4 +15,7 @@ route.get("/fetchAdminEarnings", checkAccessWithSecretKey(), SellerWalletControl
 //retrive wallet history ( seller )
 route.get("/retrieveSellerWalletHistory", checkAccessWithSecretKey(), SellerWalletController.retrieveSellerWalletHistory);
 
+//wallet summary dashboard ( seller )
+route.get("/getAllAmount", checkAccessWithSecretKey(), SellerWalletController.getAllAmount);
+
 module.exports = route;
