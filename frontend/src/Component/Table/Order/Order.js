@@ -523,12 +523,11 @@ const Order = (props) => {
                                       {...disabledIconProps}
                                     />
                                   ) : item.status === "Delivery Requested" ? (
-                                    // Seller has requested delivery — admin can approve and add tracking.
+                                    // Seller is committed to ship within 48 working hours — no admin action.
                                     <Iconb
                                       newClass={`themeFont boxCenter userBtn fs-5`}
                                       btnIcon={<OutOfDeliverIcon sx={{ color: '#856404' }} />}
-                                      isImage={true}
-                                      onClick={() => editOpenDialog(item, mapData)}
+                                      {...disabledIconProps}
                                     />
                                   ) : item.status === "Confirmed" ? (
                                     <Iconb

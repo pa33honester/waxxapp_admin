@@ -471,16 +471,12 @@ exports.updateOrder = async (req, res) => {
           });
       }
     } else if (req.query.status === "Out Of Delivery") {
-      if (!req.body.deliveredServiceName || !req.body.trackingId || !req.body.trackingLink)
+      // Tracking fields are optional — admin always provides them; seller may provide
+      // them later after physically shipping (tracking inputs removed from seller UI).
+      if (itemToUpdate.status !== "Confirmed" && itemToUpdate.status !== "Delivery Requested")
         return res.status(200).json({
           status: false,
-          message: "trackingId,trackingLink,deliveredServiceName must be requried!!",
-        });
-
-      if (itemToUpdate.status !== "Confirmed")
-        return res.status(200).json({
-          status: false,
-          message: "This order is not Confirmed , after Confirmed you can update it to Out Of Delivery",
+          message: "Only Confirmed or Delivery Requested orders can be moved to Out Of Delivery.",
         });
 
       if (itemToUpdate.status === "Out Of Delivery")
@@ -515,6 +511,7 @@ exports.updateOrder = async (req, res) => {
             "items.$.deliveredServiceName": req.body.deliveredServiceName,
             "items.$.trackingId": req.body.trackingId,
             "items.$.trackingLink": req.body.trackingLink,
+            "items.$.deliveryStartedAt": new Date(),
           },
         },
         { new: true }
@@ -2520,7 +2517,10 @@ exports.completeOrderByAdmin = async (req, res) => {
   }
 };
 
-// Seller requests delivery: Confirmed -> "Delivery Requested". Admin must approve before shipping.
+// Seller commits to ship: Confirmed -> "Delivery Requested".
+// The seller now has 48 working hours (Sundays excluded) to enter tracking
+// info and move the order to Out Of Delivery. If the window lapses, the
+// autoDeliveryWorker auto-cancels the item.
 exports.requestDeliveryBySeller = async (req, res) => {
   try {
     const { sellerId, orderId, itemId } = req.query;
@@ -2543,10 +2543,10 @@ exports.requestDeliveryBySeller = async (req, res) => {
 
     await Order.findOneAndUpdate(
       { _id: findOrder._id, "items._id": itemToUpdate._id },
-      { $set: { "items.$.status": "Delivery Requested" } }
+      { $set: { "items.$.status": "Delivery Requested", "items.$.deliveryRequestedAt": new Date() } }
     );
 
-    res.status(200).json({ status: true, message: "Delivery request submitted. Awaiting admin approval." });
+    res.status(200).json({ status: true, message: "Delivery committed. Please add tracking info within 48 working hours." });
   } catch (error) {
     console.error(error);
     return res.status(500).json({ status: false, message: error.message || "Internal Server Error" });

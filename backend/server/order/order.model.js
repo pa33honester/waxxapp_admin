@@ -47,7 +47,8 @@ const orderSchema = new mongoose.Schema(
         trackingId: { type: String, default: null },
         trackingLink: { type: String, default: null },
         date: { type: String, default: null },
-        deliveryStartedAt: { type: Date, default: null },
+        deliveryRequestedAt: { type: Date, default: null }, // set when seller taps Deliver; drives the 48h-excl-Sunday auto-cancel
+        deliveryStartedAt: { type: Date, default: null },   // set when seller submits tracking (DR → OOD); drives the 48h buyer-acceptance window
       },
     ],
 

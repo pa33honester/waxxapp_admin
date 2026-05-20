@@ -5,7 +5,7 @@ import {
   OPEN_DIALOGUE,
 } from "../../store/dialogue/dialogue.type";
 import { connect, useDispatch, useSelector } from "react-redux";
-import { orderUpdate, completeOrder, approveDelivery } from "../../store/order/order.action";
+import { orderUpdate, completeOrder } from "../../store/order/order.action";
 import Input from "../../extra/Input";
 
 const EditOrder = (props) => {
@@ -34,7 +34,6 @@ const EditOrder = (props) => {
   const orderType = [
     { name: "Pending", value: "Pending" },
     { name: "Confirmed", value: "Confirmed" },
-    { name: "Delivery Requested", value: "Delivery Requested" },
     { name: "Out Of Delivery", value: "Out Of Delivery" },
     { name: "Delivered", value: "Delivered" },
     { name: "Complete", value: "Complete" },
@@ -47,10 +46,6 @@ const EditOrder = (props) => {
     }
     if (dialogueData?.data?.status === "Confirmed") {
       return option.value === "Confirmed" || option.value === "Out Of Delivery";
-    }
-    if (dialogueData?.data?.status === "Delivery Requested") {
-      // Admin approves → provides tracking info → Out Of Delivery.
-      return option.value === "Delivery Requested" || option.value === "Out Of Delivery";
     }
     if (dialogueData?.data?.status === "Out Of Delivery") {
       return option.value === "Out Of Delivery" || option.value === "Delivered";
@@ -82,13 +77,7 @@ const EditOrder = (props) => {
         return setError({ ...error });
       } else {
         const data = { deliveredServiceName, trackingId, trackingLink };
-        if (dialogueData?.data?.status === "Delivery Requested") {
-          // Seller requested delivery; admin approves via dedicated endpoint
-          // that sets deliveryStartedAt for the 48h auto-delivery worker.
-          props.approveDelivery(orderId, itemId, data);
-        } else {
-          props.orderUpdate(userId, orderId, status, itemId, data);
-        }
+        props.orderUpdate(userId, orderId, status, itemId, data);
         dispatch({ type: CLOSE_DIALOGUE });
       }
     } else if (status === "Complete") {
@@ -260,4 +249,4 @@ const EditOrder = (props) => {
   );
 };
 
-export default connect(null, { orderUpdate, completeOrder, approveDelivery })(EditOrder);
+export default connect(null, { orderUpdate, completeOrder })(EditOrder);
