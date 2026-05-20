@@ -310,6 +310,7 @@ exports.getBuyerInbox = async (req, res) => {
       const last = c.messages && c.messages.length > 0 ? c.messages[c.messages.length - 1] : null;
       return {
         _id: c._id,
+        productId: c.productId,
         productSnapshot: c.productSnapshot,
         sellerId: c.sellerId,
         convStatus: c.status,
