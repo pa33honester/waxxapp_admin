@@ -22,10 +22,11 @@ exports.initiateCashOut = async (req, res) => {
     const sellerObjectId = new mongoose.Types.ObjectId(sellerId);
     const withdrawalAmount = Number(amount);
 
-    const [seller, pendingRequest, declinedRequest] = await Promise.all([
+    const [seller, pendingRequest, declinedRequest, lastWalletCredit] = await Promise.all([
       Seller.findOne({ _id: sellerObjectId }).select("_id netPayout isBlock fcmToken").lean(),
       WithDrawRequest.findOne({ sellerId: sellerObjectId, status: 1 }).select("_id").lean(),
       WithDrawRequest.findOne({ sellerId: sellerObjectId, status: 3 }).select("_id").lean(),
+      SellerWallet.findOne({ sellerId: sellerObjectId, transactionType: 1 }).sort({ createdAt: -1 }).select("createdAt").lean(),
     ]);
 
     if (!seller) {
@@ -55,6 +56,17 @@ exports.initiateCashOut = async (req, res) => {
         status: false,
         message: "Your withdrawal request is already pending with the admin.",
       });
+    }
+
+    if (lastWalletCredit) {
+      const hoursSinceCredit = (Date.now() - new Date(lastWalletCredit.createdAt).getTime()) / (1000 * 60 * 60);
+      if (hoursSinceCredit < 48) {
+        const hoursRemaining = Math.ceil(48 - hoursSinceCredit);
+        return res.status(200).json({
+          status: false,
+          message: `Withdrawals are available 48 hours after an order is completed. Please wait ${hoursRemaining} more hour(s).`,
+        });
+      }
     }
 
     const uniqueId = generateHistoryUniqueId();

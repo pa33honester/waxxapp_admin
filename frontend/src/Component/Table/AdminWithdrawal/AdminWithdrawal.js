@@ -291,6 +291,28 @@ const AdminWithdrawal = (props) => {
         },
 
         {
+            Header: "Payment Details",
+            body: "paymentDetails",
+            Cell: ({ row }) => (
+                <div style={{ textAlign: "left", lineHeight: "1.8" }}>
+                    {Array.isArray(row?.paymentDetails) && row.paymentDetails.length > 0
+                        ? row.paymentDetails.map((detail, i) => {
+                              const colonIdx = detail.indexOf(":");
+                              const label = colonIdx !== -1 ? detail.substring(0, colonIdx).trim() : detail;
+                              const value = colonIdx !== -1 ? detail.substring(colonIdx + 1).trim() : "";
+                              return (
+                                  <div key={i}>
+                                      <span style={{ color: "#a0a0a0", fontSize: "12px" }}>{label}: </span>
+                                      <span className="text-white" style={{ fontWeight: 600 }}>{value}</span>
+                                  </div>
+                              );
+                          })
+                        : <span style={{ color: "#a0a0a0" }}>—</span>}
+                </div>
+            ),
+        },
+
+        {
             Header:
                 status === "1"
                     ? "Created Date"
