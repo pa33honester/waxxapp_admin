@@ -998,6 +998,10 @@ exports.orderCountForSeller = async (req, res) => {
       return item.items.status === "Confirmed";
     }).length;
 
+    const deliveryRequestedOrders = order.filter((item) => {
+      return item.items.status === "Delivery Requested";
+    }).length;
+
     const outOfDeliveryOrders = order.filter((item) => {
       return item.items.status === "Out Of Delivery";
     }).length;
@@ -1020,6 +1024,7 @@ exports.orderCountForSeller = async (req, res) => {
       totalOrders,
       pendingOrders,
       confirmedOrders,
+      deliveryRequestedOrders,
       outOfDeliveryOrders,
       deliveredOrders,
       completeOrders,
@@ -1197,6 +1202,60 @@ exports.orderDetailsForSeller = async (req, res) => {
       return res.status(200).json({
         status: true,
         message: `Order history for seller with status ${req.query.status}`,
+        orders: orderWithProducts,
+      });
+    } else if (req.query.status === "Delivery Requested") {
+      const order = await Order.aggregate([
+        { $unwind: "$items" },
+        {
+          $addFields: {
+            "items.analyticDate": {
+              $toDate: { $arrayElemAt: [{ $split: ["$items.date", ","] }, 0] },
+            },
+          },
+        },
+        {
+          $match: {
+            "items.sellerId": seller._id,
+            "items.status": "Delivery Requested",
+            "items.analyticDate": { $gte: start_date, $lte: end_date },
+          },
+        },
+        { $lookup: { from: "users", localField: "userId", foreignField: "_id", as: "user" } },
+        { $unwind: "$user" },
+        {
+          $group: {
+            _id: "$_id",
+            items: { $push: "$items" },
+            shippingAddress: { $first: "$shippingAddress" },
+            orderId: { $first: "$orderId" },
+            createdAt: { $first: "$createdAt" },
+            userFirstName: { $first: "$user.firstName" },
+            userLastName: { $first: "$user.lastName" },
+            paymentGateway: { $first: "$paymentGateway" },
+            paymentStatus: { $first: "$paymentStatus" },
+            userMobileNumber: { $first: "$user.mobileNumber" },
+            userId: { $first: "$user._id" },
+          },
+        },
+        {
+          $project: {
+            _id: 1, items: 1, shippingAddress: 1, orderId: 1,
+            paymentGateway: 1, paymentStatus: 1,
+            userFirstName: 1, userLastName: 1, userMobileNumber: 1, userId: 1, createdAt: 1,
+          },
+        },
+        { $sort: { createdAt: -1 } },
+      ]);
+
+      const orderWithProducts = await Order.populate(order, {
+        path: "items.productId",
+        select: "productName mainImage _id",
+      });
+
+      return res.status(200).json({
+        status: true,
+        message: "Order history for seller with status Delivery Requested",
         orders: orderWithProducts,
       });
     } else if (req.query.status === "Out Of Delivery") {
@@ -1516,7 +1575,7 @@ exports.orderDetailsForSeller = async (req, res) => {
           $match: {
             "items.sellerId": seller._id,
             "items.status": {
-              $in: ["Pending", "Confirmed", "Out Of Delivery", "Delivered", "Complete", "Cancelled"],
+              $in: ["Pending", "Confirmed", "Delivery Requested", "Out Of Delivery", "Delivered", "Complete", "Cancelled"],
             },
             "items.analyticDate": {
               $gte: start_date,
@@ -1616,6 +1675,8 @@ exports.ordersOfUser = async (req, res) => {
       statusQuery = { "items.status": "Pending" };
     } else if (req.query.status === "Confirmed") {
       statusQuery = { "items.status": "Confirmed" };
+    } else if (req.query.status === "Delivery Requested") {
+      statusQuery = { "items.status": "Delivery Requested" };
     } else if (req.query.status === "Out Of Delivery") {
       statusQuery = { "items.status": "Out Of Delivery" };
     } else if (req.query.status === "Delivered") {
@@ -1627,7 +1688,7 @@ exports.ordersOfUser = async (req, res) => {
     } else if (req.query.status === "All") {
       statusQuery = {
         "items.status": {
-          $in: ["Pending", "Confirmed", "Out Of Delivery", "Delivered", "Complete", "Cancelled"],
+          $in: ["Pending", "Confirmed", "Delivery Requested", "Out Of Delivery", "Delivered", "Complete", "Cancelled"],
         },
       };
     } else {
@@ -2452,6 +2513,112 @@ exports.completeOrderByAdmin = async (req, res) => {
         .catch((error) => {
           console.log("Error sending seller notification: ", error);
         });
+    }
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ status: false, message: error.message || "Internal Server Error" });
+  }
+};
+
+// Seller requests delivery: Confirmed -> "Delivery Requested". Admin must approve before shipping.
+exports.requestDeliveryBySeller = async (req, res) => {
+  try {
+    const { sellerId, orderId, itemId } = req.query;
+    if (!sellerId || !orderId || !itemId) {
+      return res.status(200).json({ status: false, message: "Oops! Invalid details." });
+    }
+
+    const [seller, findOrder] = await Promise.all([Seller.findById(sellerId), Order.findById(orderId)]);
+
+    if (!seller) return res.status(200).json({ status: false, message: "Seller not found." });
+    if (seller.isBlock) return res.status(200).json({ status: false, message: "You are blocked by admin." });
+    if (!findOrder) return res.status(200).json({ status: false, message: "Order not found." });
+
+    const itemToUpdate = findOrder.items.find((item) => item._id.toString() === itemId && item.sellerId.toString() === sellerId);
+    if (!itemToUpdate) return res.status(200).json({ status: false, message: "Item not found in this order." });
+
+    if (itemToUpdate.status !== "Confirmed") {
+      return res.status(200).json({ status: false, message: "Only Confirmed orders can request delivery." });
+    }
+
+    await Order.findOneAndUpdate(
+      { _id: findOrder._id, "items._id": itemToUpdate._id },
+      { $set: { "items.$.status": "Delivery Requested" } }
+    );
+
+    res.status(200).json({ status: true, message: "Delivery request submitted. Awaiting admin approval." });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ status: false, message: error.message || "Internal Server Error" });
+  }
+};
+
+// Admin approves delivery request: "Delivery Requested" -> "Out Of Delivery". Requires tracking info.
+exports.approveDeliveryByAdmin = async (req, res) => {
+  try {
+    const { orderId, itemId } = req.query;
+    const { deliveredServiceName, trackingId, trackingLink } = req.body;
+
+    if (!orderId || !itemId) {
+      return res.status(200).json({ status: false, message: "Oops! Invalid details." });
+    }
+
+    const findOrder = await Order.findById(orderId);
+    if (!findOrder) return res.status(200).json({ status: false, message: "Order not found." });
+
+    const itemToUpdate = findOrder.items.find((item) => item._id.toString() === itemId);
+    if (!itemToUpdate) return res.status(200).json({ status: false, message: "Item not found in order." });
+
+    if (itemToUpdate.status !== "Delivery Requested") {
+      return res.status(200).json({ status: false, message: "Only 'Delivery Requested' orders can be approved." });
+    }
+
+    const updatedOrder = await Order.findOneAndUpdate(
+      { _id: findOrder._id, "items._id": itemToUpdate._id },
+      {
+        $set: {
+          "items.$.status": "Out Of Delivery",
+          "items.$.deliveredServiceName": deliveredServiceName || null,
+          "items.$.trackingId": trackingId || null,
+          "items.$.trackingLink": trackingLink || null,
+          "items.$.deliveryStartedAt": new Date(),
+        },
+      },
+      { new: true }
+    );
+
+    const data = await Order.findOne({ _id: updatedOrder._id })
+      .populate({ path: "items.productId", select: "productName mainImage _id" })
+      .populate({ path: "items.sellerId", select: "firstName lastName businessName" })
+      .populate({ path: "userId", select: "firstName lastName uniqueId" });
+
+    res.status(200).json({ status: true, message: "Delivery approved. Order is now Out Of Delivery.", data: data });
+
+    const user = await User.findById(findOrder.userId);
+    if (user && !user.isBlock && user.fcmToken) {
+      const adminPromise = await admin;
+      const payload = {
+        token: user.fcmToken,
+        notification: {
+          title: "Your Order is Out for Delivery!",
+          body: "Your order is on its way. You have 48 hours to confirm receipt, after which it will be auto-confirmed.",
+        },
+      };
+      adminPromise
+        .messaging()
+        .send(payload)
+        .then(async () => {
+          const notification = new Notification();
+          notification.userId = findOrder.userId;
+          notification.image = user.image;
+          notification.sellerId = itemToUpdate.sellerId;
+          notification.productId = itemToUpdate.productId;
+          notification.message = payload.notification.title;
+          notification.notificationType = 2;
+          notification.date = new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" });
+          await notification.save();
+        })
+        .catch((err) => console.error("FCM error:", err));
     }
   } catch (error) {
     console.error(error);

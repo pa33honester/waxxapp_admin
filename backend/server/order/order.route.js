@@ -15,6 +15,12 @@ route.patch("/updateOrder", checkAccessWithSecretKey(), orderController.updateOr
 //cancel the order by user
 route.patch("/cancelOrderByUser", checkAccessWithSecretKey(), orderController.cancelOrderByUser);
 
+//seller requests delivery (Confirmed -> Delivery Requested). Admin must approve.
+route.patch("/requestDeliveryBySeller", checkAccessWithSecretKey(), orderController.requestDeliveryBySeller);
+
+//admin approves delivery (Delivery Requested -> Out Of Delivery). Starts 48h buyer acceptance window.
+route.patch("/approveDeliveryByAdmin", checkAccessWithSecretKey(), orderController.approveDeliveryByAdmin);
+
 //buyer confirms they received the item (Out Of Delivery -> Delivered). Does NOT credit wallet.
 route.patch("/acceptDeliveryByBuyer", checkAccessWithSecretKey(), orderController.acceptDeliveryByBuyer);
 

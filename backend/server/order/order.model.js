@@ -29,6 +29,7 @@ const orderSchema = new mongoose.Schema(
           enum: [
             "Pending",
             "Confirmed",
+            "Delivery Requested",
             "Out Of Delivery",
             "Delivered",
             "Complete",
@@ -46,6 +47,7 @@ const orderSchema = new mongoose.Schema(
         trackingId: { type: String, default: null },
         trackingLink: { type: String, default: null },
         date: { type: String, default: null },
+        deliveryStartedAt: { type: Date, default: null },
       },
     ],
 

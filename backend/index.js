@@ -100,6 +100,7 @@ require("./socket");
 // require("./workers/auctionWorker");
 // require("./workers/manualAuctionWorker");
 require("./workers/giveawayWorker");
+require("./workers/autoDeliveryWorker");
 
 //mongoose connection
 const db = mongoose.connection;

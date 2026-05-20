@@ -67,6 +67,25 @@ export const completeOrder = (userId, orderId, itemId) => (dispatch) => {
     .catch((error) => setToast("error", error));
 };
 
+// Admin approves a seller's delivery request (Delivery Requested → Out Of Delivery).
+// Hits the dedicated endpoint that sets tracking info + deliveryStartedAt for the 48h worker.
+export const approveDelivery = (orderId, itemId, data) => (dispatch) => {
+  axios
+    .patch(`order/approveDeliveryByAdmin?orderId=${orderId}&itemId=${itemId}`, data)
+    .then((res) => {
+      if (res.data.status) {
+        dispatch({
+          type: ActionType.UPDATE_ORDER,
+          payload: { updateOrder: res.data.data, orderId, status: "Out Of Delivery", itemId },
+        });
+        setToast("success", res.data.message || "Delivery approved. Order is Out Of Delivery.");
+      } else {
+        setToast("error", res.data.message);
+      }
+    })
+    .catch((error) => setToast("error", error));
+};
+
 // get order details
 
 export const getOrderDetail = (id) => (dispatch) =>{

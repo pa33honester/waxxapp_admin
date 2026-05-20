@@ -200,6 +200,15 @@ const Order = (props) => {
                           <a
                             className="dropdown-item"
                             href={() => false}
+                            onClick={() => changeStatus('Delivery Requested')}
+                          >
+                            Delivery Requested
+                          </a>
+                        </li>
+                        <li style={{ cursor: "pointer", padding: "0px 5px" }}>
+                          <a
+                            className="dropdown-item"
+                            href={() => false}
                             onClick={() => changeStatus('Out Of Delivery')}
 
                           // onClick={() => setStatus("Out Of Delivery")}
@@ -472,6 +481,9 @@ const Order = (props) => {
                                   {item.status === "Cancelled" && (
                                     <span className="p-2" style={{ backgroundColor: "#FFE3E3", color: "#FF1010", borderRadius: "10px", whiteSpace: "nowrap" }}>Cancelled</span>
                                   )}
+                                  {item.status === "Delivery Requested" && (
+                                    <span className="p-2" style={{ backgroundColor: "#FFF3CD", color: "#856404", borderRadius: "10px", whiteSpace: "nowrap" }}>Delivery Requested</span>
+                                  )}
                                   {item.status === "Out Of Delivery" && (
                                     <span className="p-2" style={{ backgroundColor: "#FFE1EC", color: "#E90957", borderRadius: "10px", whiteSpace: "nowrap" }}>Out Of Delivery</span>
                                   )}
@@ -509,6 +521,14 @@ const Order = (props) => {
                                       newClass={`themeFont boxCenter userBtn fs-5`}
                                       btnIcon={<CancelIcon sx={{ color: '#737272' }} />}
                                       {...disabledIconProps}
+                                    />
+                                  ) : item.status === "Delivery Requested" ? (
+                                    // Seller has requested delivery — admin can approve and add tracking.
+                                    <Iconb
+                                      newClass={`themeFont boxCenter userBtn fs-5`}
+                                      btnIcon={<OutOfDeliverIcon sx={{ color: '#856404' }} />}
+                                      isImage={true}
+                                      onClick={() => editOpenDialog(item, mapData)}
                                     />
                                   ) : item.status === "Confirmed" ? (
                                     <Iconb
