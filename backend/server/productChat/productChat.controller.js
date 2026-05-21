@@ -138,6 +138,8 @@ exports.sendBuyerMessage = async (req, res) => {
             conversationId: conv._id.toString(),
             productId: conv.productId.toString(),
             role: "seller",
+            sellerId: conv.sellerId.toString(),
+            buyerId: conv.buyerId.toString(),
           },
         });
         const notif = new Notification();
@@ -229,6 +231,8 @@ exports.sendSellerMessage = async (req, res) => {
             conversationId: conv._id.toString(),
             productId: conv.productId.toString(),
             role: "buyer",
+            sellerId: conv.sellerId.toString(),
+            buyerId: conv.buyerId.toString(),
           },
         });
         const notif = new Notification();

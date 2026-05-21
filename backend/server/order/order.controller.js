@@ -247,6 +247,11 @@ exports.createOrder = async (req, res) => {
             title: `💎 New Order Received!`,
             body: `🛍️ You have a new order from ${user?.firstName}. Check your dashboard for details!`,
           },
+          data: {
+            type: "ORDER_UPDATE",
+            orderId: order._id.toString(),
+            role: "seller",
+          },
         };
 
         adminPromise
@@ -292,6 +297,11 @@ exports.createOrder = async (req, res) => {
         notification: {
           title: `🛒 Order Confirmed!`,
           body: `🎁 Your order (ID: ${orderId}) has been successfully placed. Thank you for shopping with us! 📦`,
+        },
+        data: {
+          type: "ORDER_UPDATE",
+          orderId: orderId,
+          role: "buyer",
         },
       };
 
@@ -448,6 +458,11 @@ exports.updateOrder = async (req, res) => {
             title: "✅ Your Order Has Been Confirmed!",
             body: "Thank you for your purchase! Your order is confirmed and will be processed shortly. 📦",
           },
+          data: {
+            type: "ORDER_UPDATE",
+            orderId: findOrder._id.toString(),
+            role: "buyer",
+          },
         };
 
         adminPromise
@@ -547,6 +562,11 @@ exports.updateOrder = async (req, res) => {
             title: "🚚 Your Order is Out for Delivery!",
             body: "Great news! Your order is on its way and will arrive soon. 🕒 Please be ready to receive it!",
           },
+          data: {
+            type: "ORDER_UPDATE",
+            orderId: findOrder._id.toString(),
+            role: "buyer",
+          },
         };
 
         adminPromise
@@ -633,6 +653,11 @@ exports.updateOrder = async (req, res) => {
           notification: {
             title: "📦 Your Order Has Arrived! 🎉",
             body: "Your order is delivered! We hope you enjoy it. 😊 If you need any assistance, feel free to reach out to us.",
+          },
+          data: {
+            type: "ORDER_UPDATE",
+            orderId: findOrder._id.toString(),
+            role: "buyer",
           },
         };
 
@@ -750,6 +775,11 @@ exports.updateOrder = async (req, res) => {
           notification: {
             title: "🛑 Your Order Has Been Cancelled 🛑",
             body: "We're sorry to inform you that your order has been canceled. Please contact support if you need assistance.",
+          },
+          data: {
+            type: "ORDER_UPDATE",
+            orderId: findOrder._id.toString(),
+            role: "buyer",
           },
         };
 
@@ -906,6 +936,11 @@ exports.cancelOrderByUser = async (req, res) => {
           notification: {
             title: "🛑 Your Order Has Been Cancelled 🛑",
             body: "We're sorry to inform you that your order has been canceled. Please contact support if you need assistance.",
+          },
+          data: {
+            type: "ORDER_UPDATE",
+            orderId: findOrder._id.toString(),
+            role: "buyer",
           },
         };
 
