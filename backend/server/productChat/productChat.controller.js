@@ -267,7 +267,7 @@ exports.getSellerInbox = async (req, res) => {
       .sort({ lastActivityAt: -1 })
       .skip((page - 1) * limit)
       .limit(limit)
-      .populate("buyerId", "firstName lastName image")
+      .populate("buyerId", "firstName lastName image email uniqueId")
       .lean();
 
     const tiles = conversations.map((c) => {

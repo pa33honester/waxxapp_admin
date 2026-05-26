@@ -306,6 +306,11 @@ exports.acceptRequest = async (req, res) => {
 
     user.isSeller = true;
     user.seller = seller?._id;
+    // Seller account approval is SEPARATE from selfie KYC verification.
+    // Explicitly clear any stale verificationStatus so the app never shows
+    // the blue verified tick just because a seller request was approved.
+    // The only legitimate path to "verified" is /verification/admin/review.
+    user.verificationStatus = "none";
 
     seller.firstName = request.firstName;
     seller.lastName = request.lastName;

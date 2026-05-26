@@ -657,9 +657,19 @@ exports.deleteUserAccount = async (req, res) => {
       return res.status(200).json({ status: false, message: "you are blocked by the admin." });
     }
 
+    // Hard-delete the User (and Seller) documents first so the account is
+    // guaranteed to be gone before we respond to the client. File cleanup
+    // and related-data sweeps run in the background — if they fail, the
+    // account is already permanently removed.
+    await User.deleteOne({ _id: user._id });
+    if (userIsSeller) await userIsSeller.deleteOne();
+
     res.status(200).json({ status: true, message: "User account has been deleted." });
 
-    await _purgeUserCascade(user, userIsSeller);
+    // Background cascade: clean up files and related collections.
+    _purgeUserCascade(user, userIsSeller).catch((e) =>
+      console.error("deleteUserAccount cascade error:", e)
+    );
   } catch (error) {
     console.log(error);
     return res.status(500).json({ status: false, error: error.message || "Internal Server Error" });
