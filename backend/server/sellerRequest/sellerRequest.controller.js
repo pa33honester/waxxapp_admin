@@ -404,6 +404,7 @@ exports.acceptRequest = async (req, res) => {
       status: true,
       message: "Seller request accepted and become the seller!",
       request,
+      seller,
       deliveries: { push: pushStatus, email: emailStatus },
     });
   } catch (error) {

@@ -55,7 +55,11 @@ const SellerRequest = (props) => {
     data
       .then((isDeleted) => {
         if (isDeleted) {
-          dispatch(acceptSellerRequest(id));
+          dispatch(acceptSellerRequest(id)).then((sellerId) => {
+            if (sellerId) {
+              navigate("/admin/sellerProfile", { state: sellerId });
+            }
+          });
         }
       })
       .catch((err) => console.log(err));

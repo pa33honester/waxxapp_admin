@@ -16,17 +16,22 @@ export const getSellerRequest = () => (dispatch) => {
 };
 
 export const acceptSellerRequest = (id) => (dispatch) => {
-  axios
+  return axios
     .patch(`request/acceptOrNot?requestId=${id}`)
     .then((res) => {
       if (res.data.status) {
         dispatch({ type: ActionType.ACCEPT_SELLER_REQUEST, payload: id });
         setToast("success", res.data.message);
+        return res.data.seller?._id || null;
       } else {
         setToast("error", res.data.message);
+        return null;
       }
     })
-    .catch((error) => setToast("error", error));
+    .catch((error) => {
+      setToast("error", error);
+      return null;
+    });
 };
 // Seller request update
 export const sellerRequestUpdate = (formData, id) => (dispatch) => {
