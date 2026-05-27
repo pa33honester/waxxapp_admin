@@ -114,11 +114,7 @@ exports.store = async (req, res) => {
   console.log("req.body in login API =================", req.body);
 
   try {
-    if (
-      !req.body.identity ||
-      req.body.loginType === undefined
-      // || !req.body.fcmToken
-    ) {
+    if (req.body.loginType === undefined) {
       return res.status(200).json({ status: false, message: "Oops ! Invalid details!!" });
     }
 
@@ -140,7 +136,7 @@ exports.store = async (req, res) => {
         });
       }
 
-      const user = await User.findOne({ email: req.body.email.trim() });
+      const user = await User.findOne({ email: req.body.email.trim(), loginType: 3 });
 
       if (user) {
         if (!user.password) {
