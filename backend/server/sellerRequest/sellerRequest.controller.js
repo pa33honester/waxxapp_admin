@@ -95,7 +95,8 @@ exports.storeRequest = async (req, res) => {
     request.password = user.password;
     request.uniqueId = user.uniqueId;
     request.image = user.image;
-    request.gender = user.gender;
+    request.gender = req.body.gender || user.gender;
+    user.gender = req.body.gender || user.gender;
     request.date = new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" });
     request.fcmToken = user.fcmToken;
 
@@ -142,7 +143,9 @@ exports.storeRequest = async (req, res) => {
     request.bankDetails.networkName = req.body.networkName ? req.body.networkName : request.bankDetails.networkName;
     request.bankDetails.momoName = req.body.momoName ? req.body.momoName : request.bankDetails.momoName;
 
-    const [saveRequest, isAccepted] = await Promise.all([request.save(), request?.isAccepted]);
+    await Promise.all([request.save(), user.save()]);
+    const saveRequest = request;
+    const isAccepted = request?.isAccepted;
 
     res.status(200).json({
       status: true,
