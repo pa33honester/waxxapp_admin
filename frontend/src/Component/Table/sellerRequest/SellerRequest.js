@@ -197,17 +197,42 @@ const mapData = [
     ),
   },
   {
-    Header: "Gov ID",
-    body: "govId",
+    Header: "Gov ID Front",
+    body: "govIdFront",
     Cell: ({ row }) => (
       <>
         {loading ? (
           <Skeleton height={40} width={60} style={{ borderRadius: "6px" }} className="StripeElement " baseColor={colors?.baseColor} highlightColor={colors?.highlightColor} />
         ) : (
           <>
-            {row?.govId ? (
+            {row?.govIdFront ? (
+              <a href={row.govIdFront} target="_blank" rel="noreferrer">
+                <img src={row.govIdFront} height={45} width={60} style={{ objectFit: "cover", borderRadius: "6px" }} alt="govIdFront" onError={(e) => { e.target.onerror = null; e.target.src = defaultImage; }} />
+              </a>
+            ) : row?.govId ? (
               <a href={row.govId} target="_blank" rel="noreferrer">
                 <img src={row.govId} height={45} width={60} style={{ objectFit: "cover", borderRadius: "6px" }} alt="govId" onError={(e) => { e.target.onerror = null; e.target.src = defaultImage; }} />
+              </a>
+            ) : (
+              <span className="text-white">-</span>
+            )}
+          </>
+        )}
+      </>
+    ),
+  },
+  {
+    Header: "Gov ID Back",
+    body: "govIdBack",
+    Cell: ({ row }) => (
+      <>
+        {loading ? (
+          <Skeleton height={40} width={60} style={{ borderRadius: "6px" }} className="StripeElement " baseColor={colors?.baseColor} highlightColor={colors?.highlightColor} />
+        ) : (
+          <>
+            {row?.govIdBack ? (
+              <a href={row.govIdBack} target="_blank" rel="noreferrer">
+                <img src={row.govIdBack} height={45} width={60} style={{ objectFit: "cover", borderRadius: "6px" }} alt="govIdBack" onError={(e) => { e.target.onerror = null; e.target.src = defaultImage; }} />
               </a>
             ) : (
               <span className="text-white">-</span>
