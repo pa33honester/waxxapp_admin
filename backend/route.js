@@ -16,6 +16,14 @@ app.use("/", ShortPreviewRoute);
 const LivePreviewRoute = require("./server/livePreview/livePreview.route");
 app.use("/", LivePreviewRoute);
 
+//Product preview (public web page for shared products; deep-link target)
+const ProductPreviewRoute = require("./server/productPreview/productPreview.route");
+app.use("/", ProductPreviewRoute);
+
+//Seller preview (public web page for shared seller stores; deep-link target)
+const SellerPreviewRoute = require("./server/sellerPreview/sellerPreview.route");
+app.use("/", SellerPreviewRoute);
+
 //User Route
 const UserRoute = require("./server/user/user.route");
 app.use("/user", UserRoute);
