@@ -57,6 +57,8 @@ const privateStorage = multer.diskStorage({
 const KYC_FIELDNAMES = new Set([
   "selfie",
   "govId",
+  "govIdFront",
+  "govIdBack",
   "addressProof",
   "registrationCert",
 ]);

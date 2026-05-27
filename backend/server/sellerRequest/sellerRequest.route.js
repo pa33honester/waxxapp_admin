@@ -34,7 +34,8 @@ route.post(
   checkAccessWithSecretKey(),
   mixedUpload.fields([
     { name: "logo", maxCount: 5 },
-    { name: "govId", maxCount: 5 },
+    { name: "govIdFront", maxCount: 1 },
+    { name: "govIdBack", maxCount: 1 },
     { name: "registrationCert", maxCount: 5 },
     { name: "addressProof", maxCount: 5 },
   ]),

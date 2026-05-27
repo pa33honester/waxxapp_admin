@@ -111,8 +111,12 @@ exports.storeRequest = async (req, res) => {
       request.logo = fileUrlFor(req.files.logo[0], config.baseURL);
     }
 
-    if (req.files?.govId?.[0]) {
-      request.govId = fileUrlFor(req.files.govId[0], config.baseURL);
+    if (req.files?.govIdFront?.[0]) {
+      request.govIdFront = fileUrlFor(req.files.govIdFront[0], config.baseURL);
+    }
+
+    if (req.files?.govIdBack?.[0]) {
+      request.govIdBack = fileUrlFor(req.files.govIdBack[0], config.baseURL);
     }
 
     if (req.files?.registrationCert?.[0]) {
@@ -151,8 +155,8 @@ exports.storeRequest = async (req, res) => {
       const requestPayload = {
         token: user.fcmToken,
         notification: {
-          title: "Seller Request Submitted",
-          body: "Thanks for applying! Our team is reviewing your seller request. We will notify you once it is approved.",
+          title: "Account Under Review",
+          body: "Your account is under review. We will notify you once it is approved.",
         },
         data: {
           type: "SELLER_REQUEST_CREATED",
@@ -348,6 +352,8 @@ exports.acceptRequest = async (req, res) => {
     seller.logo = request?.logo;
     seller.description = request?.description;
     seller.govId = request?.govId;
+    seller.govIdFront = request?.govIdFront;
+    seller.govIdBack = request?.govIdBack;
     seller.registrationCert = request?.registrationCert;
     seller.addressProof = request?.addressProof;
 

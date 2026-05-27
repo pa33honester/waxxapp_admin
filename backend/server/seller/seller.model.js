@@ -14,6 +14,8 @@ const sellerSchema = new mongoose.Schema(
     description: { type: String, default: null },
 
     govId: { type: String, default: null },
+    govIdFront: { type: String, default: null },
+    govIdBack: { type: String, default: null },
     registrationCert: { type: String, default: null },
     addressProof: { type: String, default: null },
 
