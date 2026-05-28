@@ -1,4 +1,4 @@
-const Reel = require("../reel/reel.model");
+﻿const Reel = require("../reel/reel.model");
 const mongoose = require("mongoose");
 
 const escapeHtml = (s) =>
@@ -34,8 +34,8 @@ exports.renderShortPreview = async (req, res) => {
     const sellerName =
       reel.sellerId?.businessName ||
       [reel.sellerId?.firstName, reel.sellerId?.lastName].filter(Boolean).join(" ") ||
-      "Waxxapp seller";
-    const description = reel.description || `${sellerName} on Waxxapp`;
+      "J4market seller";
+    const description = reel.description || `${sellerName} on J4market`;
     const thumbnail = reel.thumbnail || "";
     const video = reel.video || "";
     const canonicalUrl = `https://www.waxxapp.com/short/${reelId}`;
@@ -50,12 +50,12 @@ exports.renderShortPreview = async (req, res) => {
 
 function buildHtml({ sellerName, description, thumbnail, video, canonicalUrl }) {
   const safeSeller = escapeHtml(sellerName);
-  const safeDescription = escapeHtml(description.length > 140 ? description.slice(0, 137) + "…" : description);
+  const safeDescription = escapeHtml(description.length > 140 ? description.slice(0, 137) + "â€¦" : description);
   const safeThumb = escapeHtml(thumbnail);
   const safeVideo = escapeHtml(video);
   const safeCanonical = escapeHtml(canonicalUrl);
   // Path component the app maps to a specific short. The canonical URL has
-  // the form https://www.waxxapp.com/short/<reelId> — the substring after
+  // the form https://www.waxxapp.com/short/<reelId> â€” the substring after
   // /short/ is what app-side routers care about.
   const reelIdEscaped = escapeHtml(canonicalUrl.split("/short/")[1] || "");
   const playStoreUrl = "https://play.google.com/store/apps/details?id=com.waxxapp";
@@ -66,20 +66,20 @@ function buildHtml({ sellerName, description, thumbnail, video, canonicalUrl }) 
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>${safeSeller} on Waxxapp</title>
+  <title>${safeSeller} on J4market</title>
   <link rel="canonical" href="${safeCanonical}">
 
-  <meta property="og:title" content="${safeSeller} on Waxxapp">
+  <meta property="og:title" content="${safeSeller} on J4market">
   <meta property="og:description" content="${safeDescription}">
   <meta property="og:image" content="${safeThumb}">
   <meta property="og:video" content="${safeVideo}">
   <meta property="og:video:type" content="video/mp4">
   <meta property="og:type" content="video.other">
   <meta property="og:url" content="${safeCanonical}">
-  <meta property="og:site_name" content="Waxxapp">
+  <meta property="og:site_name" content="J4market">
 
   <meta name="twitter:card" content="player">
-  <meta name="twitter:title" content="${safeSeller} on Waxxapp">
+  <meta name="twitter:title" content="${safeSeller} on J4market">
   <meta name="twitter:description" content="${safeDescription}">
   <meta name="twitter:image" content="${safeThumb}">
   <meta name="twitter:player" content="${safeVideo}">
@@ -115,19 +115,19 @@ function buildHtml({ sellerName, description, thumbnail, video, canonicalUrl }) 
         <a class="btn btn-secondary" id="install-btn" href="${playStoreUrl}">Install</a>
       </div>
     </div>
-    <div class="footer">Powered by <a href="https://www.waxxapp.com">Waxxapp</a></div>
+    <div class="footer">Powered by <a href="https://www.waxxapp.com">J4market</a></div>
   </div>
   <script>
-    // The "Open in app" button can't just <a href> back to the same URL —
+    // The "Open in app" button can't just <a href> back to the same URL â€”
     // browsers don't hand off to the app for a same-domain link tap.
     // We intercept the click and explicitly ask the OS to dispatch:
-    //   • Android  → an Intent URL with package=com.waxxapp + a Play Store
+    //   â€¢ Android  â†’ an Intent URL with package=com.waxxapp + a Play Store
     //                fallback baked into S.browser_fallback_url, so it Just
     //                Works whether or not the user has the app and whether
     //                or not Android App Links are verified yet.
-    //   • iOS      → a custom waxxapp:// URL. If the app is installed it
+    //   â€¢ iOS      â†’ a custom waxxapp:// URL. If the app is installed it
     //                fires; if not, the timer falls back to the App Store.
-    //   • Desktop  → no app possible, send to the install page.
+    //   â€¢ Desktop  â†’ no app possible, send to the install page.
     (function () {
       var REEL_ID = ${JSON.stringify(reelIdEscaped)};
       var PLAY_STORE = ${JSON.stringify(playStoreUrl)};
@@ -155,17 +155,17 @@ function buildHtml({ sellerName, description, thumbnail, video, canonicalUrl }) 
           return;
         }
         if (isIOS) {
-          // Custom scheme — registered in Info.plist as a URL type.
+          // Custom scheme â€” registered in Info.plist as a URL type.
           var customScheme = 'waxxapp://short/' + REEL_ID;
           var t0 = Date.now();
           var fallbackTimer = setTimeout(function () {
             // If the page is still visible after 1.6s, the app didn't pick
-            // up the URL → send the user to the App Store.
+            // up the URL â†’ send the user to the App Store.
             if (Date.now() - t0 < 2000 && !document.hidden) {
               window.location.href = APP_STORE;
             }
           }, 1600);
-          // If the app intercepts, the page goes hidden / pauses JS — stop
+          // If the app intercepts, the page goes hidden / pauses JS â€” stop
           // the fallback so we don't bounce them off to the store.
           document.addEventListener('visibilitychange', function () {
             if (document.hidden) clearTimeout(fallbackTimer);
@@ -173,7 +173,7 @@ function buildHtml({ sellerName, description, thumbnail, video, canonicalUrl }) 
           window.location.href = customScheme;
           return;
         }
-        // Desktop / other — there's no app to open, just push the install page.
+        // Desktop / other â€” there's no app to open, just push the install page.
         window.location.href = PLAY_STORE;
       });
     })();
@@ -184,7 +184,7 @@ function buildHtml({ sellerName, description, thumbnail, video, canonicalUrl }) 
 
 function notFoundHtml() {
   return `<!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Short not found · Waxxapp</title>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Short not found Â· J4market</title>
 <style>html,body{margin:0;padding:0;height:100%;background:#0b0b0c;color:#fff;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,system-ui,sans-serif;display:flex;align-items:center;justify-content:center;text-align:center}main{padding:32px}h1{font-size:18px;margin:0 0 8px}p{color:#9b9ba2;margin:0 0 24px}a{display:inline-block;background:#DEF213;color:#000;padding:10px 18px;border-radius:10px;text-decoration:none;font-weight:700;font-size:14px}</style>
-</head><body><main><h1>This short isn't available</h1><p>It may have been removed or the link is incorrect.</p><a href="https://play.google.com/store/apps/details?id=com.waxxapp">Get the Waxxapp app</a></main></body></html>`;
+</head><body><main><h1>This short isn't available</h1><p>It may have been removed or the link is incorrect.</p><a href="https://play.google.com/store/apps/details?id=com.waxxapp">Get the J4market app</a></main></body></html>`;
 }

@@ -1,4 +1,4 @@
-const Product = require("../product/product.model");
+﻿const Product = require("../product/product.model");
 const mongoose = require("mongoose");
 
 const escapeHtml = (s) =>
@@ -17,19 +17,19 @@ exports.renderProductPreview = async (req, res) => {
     }
 
     const product = await Product.findById(productId)
-      .populate({ path: "sellerId", select: "businessName firstName lastName" })
+      .populate({ path: "seller", select: "businessName firstName lastName" })
       .lean();
 
     if (!product) return res.status(404).send(notFoundHtml());
 
-    const productName = product.productName || "Product on Waxxapp";
+    const productName = product.productName || "Product on J4market";
     const description = product.description || productName;
     const image = product.mainImage || "";
     const price = product.price ? `$${product.price}` : "";
     const sellerName =
-      product.sellerId?.businessName ||
-      [product.sellerId?.firstName, product.sellerId?.lastName].filter(Boolean).join(" ") ||
-      "Waxxapp seller";
+      product.seller?.businessName ||
+      [product.seller?.firstName, product.seller?.lastName].filter(Boolean).join(" ") ||
+      "J4market seller";
     const canonicalUrl = `https://www.waxxapp.com/product/${productId}`;
 
     res.set("Cache-Control", "public, max-age=300");
@@ -42,7 +42,7 @@ exports.renderProductPreview = async (req, res) => {
 
 function buildHtml({ productName, description, image, price, sellerName, canonicalUrl }) {
   const safeName = escapeHtml(productName);
-  const safeDesc = escapeHtml(description.length > 140 ? description.slice(0, 137) + "…" : description);
+  const safeDesc = escapeHtml(description.length > 140 ? description.slice(0, 137) + "â€¦" : description);
   const safeImage = escapeHtml(image);
   const safeSeller = escapeHtml(sellerName);
   const safePrice = escapeHtml(price);
@@ -56,7 +56,7 @@ function buildHtml({ productName, description, image, price, sellerName, canonic
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>${safeName} · Waxxapp</title>
+  <title>${safeName} Â· J4market</title>
   <link rel="canonical" href="${safeCanonical}">
 
   <meta property="og:title" content="${safeName}">
@@ -64,7 +64,7 @@ function buildHtml({ productName, description, image, price, sellerName, canonic
   <meta property="og:image" content="${safeImage}">
   <meta property="og:type" content="product">
   <meta property="og:url" content="${safeCanonical}">
-  <meta property="og:site_name" content="Waxxapp">
+  <meta property="og:site_name" content="J4market">
 
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="${safeName}">
@@ -106,7 +106,7 @@ function buildHtml({ productName, description, image, price, sellerName, canonic
         <a class="btn btn-secondary" id="install-btn" href="${playStoreUrl}">Install</a>
       </div>
     </div>
-    <div class="footer">Powered by <a href="https://www.waxxapp.com">Waxxapp</a></div>
+    <div class="footer">Powered by <a href="https://www.waxxapp.com">J4market</a></div>
   </div>
   <script>
     (function () {
@@ -159,7 +159,7 @@ function buildHtml({ productName, description, image, price, sellerName, canonic
 
 function notFoundHtml() {
   return `<!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Product not found · Waxxapp</title>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Product not found Â· J4market</title>
 <style>html,body{margin:0;padding:0;height:100%;background:#0b0b0c;color:#fff;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,system-ui,sans-serif;display:flex;align-items:center;justify-content:center;text-align:center}main{padding:32px}h1{font-size:18px;margin:0 0 8px}p{color:#9b9ba2;margin:0 0 24px}a{display:inline-block;background:#DEF213;color:#000;padding:10px 18px;border-radius:10px;text-decoration:none;font-weight:700;font-size:14px}</style>
-</head><body><main><h1>This product isn't available</h1><p>It may have been removed or the link is incorrect.</p><a href="https://play.google.com/store/apps/details?id=com.waxxapp">Get the Waxxapp app</a></main></body></html>`;
+</head><body><main><h1>This product isn't available</h1><p>It may have been removed or the link is incorrect.</p><a href="https://play.google.com/store/apps/details?id=com.waxxapp">Get the J4market app</a></main></body></html>`;
 }

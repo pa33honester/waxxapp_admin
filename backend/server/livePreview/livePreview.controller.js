@@ -1,4 +1,4 @@
-const LiveSeller = require("../liveSeller/liveSeller.model");
+﻿const LiveSeller = require("../liveSeller/liveSeller.model");
 const Seller = require("../seller/seller.model");
 const mongoose = require("mongoose");
 
@@ -16,7 +16,7 @@ const escapeHtml = (s) =>
 // verified (see assetlinks.json + apple-app-site-association). If the
 // app isn't installed (or App Links haven't verified yet), the user
 // lands on this page and can hit Install. The page also handles the
-// "live has ended" case — the LiveSeller doc is deleted on stream end,
+// "live has ended" case â€” the LiveSeller doc is deleted on stream end,
 // so an old shared link still renders something sane.
 exports.renderLivePreview = async (req, res) => {
   try {
@@ -29,12 +29,12 @@ exports.renderLivePreview = async (req, res) => {
 
     let sellerName, image, businessTag, isLiveNow;
     if (live) {
-      sellerName = live.businessName || `${live.firstName || ""} ${live.lastName || ""}`.trim() || "Waxxapp seller";
+      sellerName = live.businessName || `${live.firstName || ""} ${live.lastName || ""}`.trim() || "J4market seller";
       image = live.image || "";
       businessTag = live.businessTag || "";
       isLiveNow = true;
     } else {
-      // Live has ended — fall back to whatever seller info we can dig up
+      // Live has ended â€” fall back to whatever seller info we can dig up
       // by following the liveSellingHistory back to the seller. If even
       // that fails we render the generic "ended" page.
       const histId = new mongoose.Types.ObjectId(liveSellingHistoryId);
@@ -43,7 +43,7 @@ exports.renderLivePreview = async (req, res) => {
       if (!history) return res.status(404).send(notFoundHtml({ ended: true }));
       const seller = await Seller.findById(history.sellerId).select("firstName lastName businessName businessTag image").lean();
       if (!seller) return res.status(404).send(notFoundHtml({ ended: true }));
-      sellerName = seller.businessName || `${seller.firstName || ""} ${seller.lastName || ""}`.trim() || "Waxxapp seller";
+      sellerName = seller.businessName || `${seller.firstName || ""} ${seller.lastName || ""}`.trim() || "J4market seller";
       image = seller.image || "";
       businessTag = seller.businessTag || "";
       isLiveNow = false;
@@ -65,12 +65,12 @@ function buildHtml({ sellerName, image, businessTag, isLiveNow, canonicalUrl, li
   const safeImage = escapeHtml(image);
   const safeCanonical = escapeHtml(canonicalUrl);
   const safeLiveId = escapeHtml(liveId);
-  const description = isLiveNow ? `${sellerName} is live now on Waxxapp — join the show.` : `${sellerName} just wrapped a live show on Waxxapp.`;
+  const description = isLiveNow ? `${sellerName} is live now on J4market â€” join the show.` : `${sellerName} just wrapped a live show on J4market.`;
   const safeDesc = escapeHtml(description);
   const playStoreUrl = "https://play.google.com/store/apps/details?id=com.waxxapp";
   const appStoreUrl = "https://apps.apple.com/app/waxxapp/id000000000"; // TODO: real iOS App Store id
   const liveBadge = isLiveNow
-    ? `<span class="badge live">● LIVE NOW</span>`
+    ? `<span class="badge live">â— LIVE NOW</span>`
     : `<span class="badge ended">SHOW ENDED</span>`;
 
   return `<!doctype html>
@@ -78,18 +78,18 @@ function buildHtml({ sellerName, image, businessTag, isLiveNow, canonicalUrl, li
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>${safeSeller} on Waxxapp</title>
+  <title>${safeSeller} on J4market</title>
   <link rel="canonical" href="${safeCanonical}">
 
-  <meta property="og:title" content="${safeSeller} ${isLiveNow ? "is live now" : "on Waxxapp"}">
+  <meta property="og:title" content="${safeSeller} ${isLiveNow ? "is live now" : "on J4market"}">
   <meta property="og:description" content="${safeDesc}">
   <meta property="og:image" content="${safeImage}">
   <meta property="og:type" content="video.other">
   <meta property="og:url" content="${safeCanonical}">
-  <meta property="og:site_name" content="Waxxapp">
+  <meta property="og:site_name" content="J4market">
 
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="${safeSeller} ${isLiveNow ? "is live now" : "on Waxxapp"}">
+  <meta name="twitter:title" content="${safeSeller} ${isLiveNow ? "is live now" : "on J4market"}">
   <meta name="twitter:description" content="${safeDesc}">
   <meta name="twitter:image" content="${safeImage}">
 
@@ -133,10 +133,10 @@ function buildHtml({ sellerName, image, businessTag, isLiveNow, canonicalUrl, li
         <a class="btn btn-secondary" id="install-btn" href="${playStoreUrl}">Install</a>
       </div>
     </div>
-    <div class="footer">Powered by <a href="https://www.waxxapp.com">Waxxapp</a></div>
+    <div class="footer">Powered by <a href="https://www.waxxapp.com">J4market</a></div>
   </div>
   <script>
-    // Same handoff pattern as the /short/<id> preview — see that file for
+    // Same handoff pattern as the /short/<id> preview â€” see that file for
     // the rationale. Browsers don't dispatch to an installed app for a
     // same-domain link tap, so we explicitly route via Intent URL on
     // Android and waxxapp:// on iOS.
@@ -191,7 +191,7 @@ function notFoundHtml({ ended }) {
   const msg = ended ? "This live show has ended" : "This live show isn't available";
   const sub = ended ? "The seller's no longer broadcasting." : "It may have been removed or the link is incorrect.";
   return `<!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Live · Waxxapp</title>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Live Â· J4market</title>
 <style>html,body{margin:0;padding:0;height:100%;background:#0b0b0c;color:#fff;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,system-ui,sans-serif;display:flex;align-items:center;justify-content:center;text-align:center}main{padding:32px}h1{font-size:18px;margin:0 0 8px}p{color:#9b9ba2;margin:0 0 24px}a{display:inline-block;background:#DEF213;color:#000;padding:10px 18px;border-radius:10px;text-decoration:none;font-weight:700;font-size:14px}</style>
-</head><body><main><h1>${msg}</h1><p>${sub}</p><a href="https://play.google.com/store/apps/details?id=com.waxxapp">Get the Waxxapp app</a></main></body></html>`;
+</head><body><main><h1>${msg}</h1><p>${sub}</p><a href="https://play.google.com/store/apps/details?id=com.waxxapp">Get the J4market app</a></main></body></html>`;
 }

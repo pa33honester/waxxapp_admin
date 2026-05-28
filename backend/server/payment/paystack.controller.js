@@ -1,9 +1,9 @@
-// Paystack server-side transaction verification.
+﻿// Paystack server-side transaction verification.
 //
 // The Flutter app launches Paystack's standard checkout via
 // paystack_for_flutter, which signs in with the secret key and returns a
 // reference on the success callback. That callback alone is *not* trustworthy
-// — anyone can hit our /order/create with paymentGateway=Paystack and a fake
+// â€” anyone can hit our /order/create with paymentGateway=Paystack and a fake
 // reference. So before we credit anything, the app calls this endpoint with
 // the reference; we hit Paystack's GET /transaction/verify/:reference using
 // the admin-configured secret key and confirm:
@@ -52,7 +52,7 @@ exports.verify = async (req, res) => {
 
     const data = body.data || {};
     const gatewayStatus = data.status; // "success" | "failed" | "abandoned" | ...
-    const gatewayAmount = data.amount; // in kobo/pesewas — smallest unit
+    const gatewayAmount = data.amount; // in kobo/pesewas â€” smallest unit
     const gatewayCurrency = data.currency;
 
     if (gatewayStatus !== "success") {
@@ -64,7 +64,7 @@ exports.verify = async (req, res) => {
 
     // Defence against amount tampering. Both sides agree on the smallest
     // currency unit. If the client's expectedAmount and Paystack's settled
-    // amount disagree, refuse — the client may have asked Paystack to charge
+    // amount disagree, refuse â€” the client may have asked Paystack to charge
     // 1 GHS and then claimed the order was 1000 GHS.
     if (
       expectedAmount !== undefined &&
@@ -73,14 +73,14 @@ exports.verify = async (req, res) => {
       Number(expectedAmount) !== Number(gatewayAmount)
     ) {
       console.log(
-        "Paystack amount mismatch — expected",
+        "Paystack amount mismatch â€” expected",
         expectedAmount,
         "got",
         gatewayAmount
       );
       return res.status(200).json({
         status: false,
-        message: "Amount mismatch — payment rejected",
+        message: "Amount mismatch â€” payment rejected",
       });
     }
 
@@ -106,7 +106,7 @@ exports.verify = async (req, res) => {
 // Paystack post-checkout redirect target. The paystack_for_flutter SDK
 // runs the checkout in an in-app webview and handles its own success
 // callback there, but Paystack's dashboard requires SOMETHING in the
-// "Live Callback URL" field — and a hand-typed redirect URL on a
+// "Live Callback URL" field â€” and a hand-typed redirect URL on a
 // generated payment page also lands here. Renders a tiny standalone
 // HTML page that says "Payment received, please return to the app" so
 // the user isn't dumped on a 404 if Paystack ever does redirect them.
@@ -117,7 +117,7 @@ exports.callback = async (req, res) => {
 <html><head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Payment received — Waxxapp</title>
+  <title>Payment received â€” Waxxapp</title>
   <style>
     html,body{margin:0;height:100%;background:#0b0b0b;color:#eee;font-family:-apple-system,BlinkMacSystemFont,sans-serif}
     .wrap{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:24px;text-align:center}
@@ -128,10 +128,10 @@ exports.callback = async (req, res) => {
   </style>
 </head><body>
 <div class="wrap">
-  <div class="ok">✓</div>
+  <div class="ok">âœ“</div>
   <h1>Payment received</h1>
-  <p>Thanks — your payment is being processed.</p>
-  <p>You can return to the Waxxapp app to see your order.</p>
+  <p>Thanks â€” your payment is being processed.</p>
+  <p>You can return to the J4market app to see your order.</p>
   ${ref ? `<p><code>Ref: ${String(ref).replace(/[^a-zA-Z0-9_-]/g, "")}</code></p>` : ""}
 </div>
 </body></html>`);
@@ -146,7 +146,7 @@ exports.callback = async (req, res) => {
 // from the Flutter client) can be lost if the user closes the app
 // after Paystack confirmed but before the client called us back. With
 // the webhook armed, the order still flips to paid even if the client
-// never returns. Idempotent — already-paid orders are no-ops.
+// never returns. Idempotent â€” already-paid orders are no-ops.
 //
 // IMPORTANT: this route MUST receive the raw request body to compute
 // the HMAC. The route mount in route.js uses express.raw() for the
@@ -190,7 +190,7 @@ exports.webhook = async (req, res) => {
     const data = (payload && payload.data) || {};
     console.log("Paystack webhook received:", event, "ref:", data.reference);
 
-    // We always 200 fast — Paystack retries 4xx/5xx aggressively. Heavy
+    // We always 200 fast â€” Paystack retries 4xx/5xx aggressively. Heavy
     // work happens after the response is committed.
     res.status(200).send("ok");
 

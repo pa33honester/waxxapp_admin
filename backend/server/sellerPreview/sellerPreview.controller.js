@@ -1,4 +1,4 @@
-const Seller = require("../seller/seller.model");
+﻿const Seller = require("../seller/seller.model");
 const mongoose = require("mongoose");
 
 const escapeHtml = (s) =>
@@ -25,8 +25,8 @@ exports.renderSellerPreview = async (req, res) => {
     const sellerName =
       seller.businessName ||
       [seller.firstName, seller.lastName].filter(Boolean).join(" ") ||
-      "Waxxapp seller";
-    const description = seller.description || seller.businessTag || `Check out ${sellerName}'s store on Waxxapp`;
+      "J4market seller";
+    const description = seller.description || seller.businessTag || `Check out ${sellerName}'s store on J4market`;
     const image = seller.image || "";
     const canonicalUrl = `https://www.waxxapp.com/seller/${sellerId}`;
 
@@ -40,7 +40,7 @@ exports.renderSellerPreview = async (req, res) => {
 
 function buildHtml({ sellerName, description, image, canonicalUrl }) {
   const safeName = escapeHtml(sellerName);
-  const safeDesc = escapeHtml(description.length > 140 ? description.slice(0, 137) + "…" : description);
+  const safeDesc = escapeHtml(description.length > 140 ? description.slice(0, 137) + "â€¦" : description);
   const safeImage = escapeHtml(image);
   const safeCanonical = escapeHtml(canonicalUrl);
   const sellerIdEscaped = escapeHtml(canonicalUrl.split("/seller/")[1] || "");
@@ -52,18 +52,18 @@ function buildHtml({ sellerName, description, image, canonicalUrl }) {
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>${safeName} · Waxxapp</title>
+  <title>${safeName} Â· J4market</title>
   <link rel="canonical" href="${safeCanonical}">
 
-  <meta property="og:title" content="${safeName} on Waxxapp">
+  <meta property="og:title" content="${safeName} on J4market">
   <meta property="og:description" content="${safeDesc}">
   <meta property="og:image" content="${safeImage}">
   <meta property="og:type" content="profile">
   <meta property="og:url" content="${safeCanonical}">
-  <meta property="og:site_name" content="Waxxapp">
+  <meta property="og:site_name" content="J4market">
 
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="${safeName} on Waxxapp">
+  <meta name="twitter:title" content="${safeName} on J4market">
   <meta name="twitter:description" content="${safeDesc}">
   <meta name="twitter:image" content="${safeImage}">
 
@@ -91,7 +91,7 @@ function buildHtml({ sellerName, description, image, canonicalUrl }) {
     <div class="card">
       ${safeImage
         ? `<img class="seller-img" src="${safeImage}" alt="${safeName}">`
-        : `<div class="avatar-placeholder">🛍️</div>`}
+        : `<div class="avatar-placeholder">ðŸ›ï¸</div>`}
       <div class="meta">
         <div class="seller-name">${safeName}</div>
         <div class="desc">${safeDesc}</div>
@@ -101,7 +101,7 @@ function buildHtml({ sellerName, description, image, canonicalUrl }) {
         <a class="btn btn-secondary" id="install-btn" href="${playStoreUrl}">Install</a>
       </div>
     </div>
-    <div class="footer">Powered by <a href="https://www.waxxapp.com">Waxxapp</a></div>
+    <div class="footer">Powered by <a href="https://www.waxxapp.com">J4market</a></div>
   </div>
   <script>
     (function () {
@@ -154,7 +154,7 @@ function buildHtml({ sellerName, description, image, canonicalUrl }) {
 
 function notFoundHtml() {
   return `<!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Seller not found · Waxxapp</title>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Seller not found Â· J4market</title>
 <style>html,body{margin:0;padding:0;height:100%;background:#0b0b0c;color:#fff;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,system-ui,sans-serif;display:flex;align-items:center;justify-content:center;text-align:center}main{padding:32px}h1{font-size:18px;margin:0 0 8px}p{color:#9b9ba2;margin:0 0 24px}a{display:inline-block;background:#DEF213;color:#000;padding:10px 18px;border-radius:10px;text-decoration:none;font-weight:700;font-size:14px}</style>
-</head><body><main><h1>This store isn't available</h1><p>It may have been removed or the link is incorrect.</p><a href="https://play.google.com/store/apps/details?id=com.waxxapp">Get the Waxxapp app</a></main></body></html>`;
+</head><body><main><h1>This store isn't available</h1><p>It may have been removed or the link is incorrect.</p><a href="https://play.google.com/store/apps/details?id=com.waxxapp">Get the J4market app</a></main></body></html>`;
 }
