@@ -166,7 +166,7 @@ exports.approve = async (req, res) => {
     if (request.email) {
       const result = await sendTransactionalEmail({
         to: request.email,
-        subject: `Your ${config.projectName || "Waxxapp"} account is ready`,
+        subject: `Your ${config.projectName || "J4market"} account is ready`,
         html: templates.accountApproved({ firstName: user.firstName, email: user.email }),
       });
       emailStatus = result.ok ? "sent" : result.reason || "failed";
@@ -212,7 +212,7 @@ exports.reject = async (req, res) => {
     if (request.email) {
       const result = await sendTransactionalEmail({
         to: request.email,
-        subject: `About your ${config.projectName || "Waxxapp"} account request`,
+        subject: `About your ${config.projectName || "J4market"} account request`,
         html: templates.accountRejected({ firstName: request.firstName, reason: request.rejectReason }),
       });
       emailStatus = result.ok ? "sent" : result.reason || "failed";

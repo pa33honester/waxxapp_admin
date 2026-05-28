@@ -117,7 +117,7 @@ exports.callback = async (req, res) => {
 <html><head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Payment received â€” Waxxapp</title>
+  <title>Payment received â€” J4market</title>
   <style>
     html,body{margin:0;height:100%;background:#0b0b0b;color:#eee;font-family:-apple-system,BlinkMacSystemFont,sans-serif}
     .wrap{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:24px;text-align:center}

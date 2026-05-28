@@ -38,7 +38,7 @@ async function sendTransactionalEmail({ to, subject, html }) {
 }
 
 function baseTemplate({ heading, intro, ctaText, ctaUrl, outro }) {
-  const brand = config.projectName || "Waxxapp";
+  const brand = config.projectName || "J4market";
   const btn = ctaText && ctaUrl
     ? `<p style="text-align:center;margin:28px 0;">
          <a href="${ctaUrl}" style="display:inline-block;padding:12px 28px;background:#b93160;color:#fff;text-decoration:none;border-radius:6px;font-weight:600;">${ctaText}</a>

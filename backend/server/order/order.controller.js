@@ -2423,7 +2423,7 @@ exports.acceptDeliveryByBuyer = async (req, res) => {
         token: seller.fcmToken,
         notification: {
           title: "📬 Buyer confirmed delivery",
-          body: "The buyer marked their order as delivered. Funds will release once Waxxapp marks it Complete.",
+          body: "The buyer marked their order as delivered. Funds will release once J4market marks it Complete.",
         },
       };
       adminPromise
@@ -2525,7 +2525,7 @@ exports.completeOrderByAdmin = async (req, res) => {
         token: seller.fcmToken,
         notification: {
           title: "💰 Funds released to your wallet",
-          body: "Waxxapp has marked your order as Complete. The earnings are now available in your wallet.",
+          body: "J4market has marked your order as Complete. The earnings are now available in your wallet.",
         },
       };
       adminPromise
