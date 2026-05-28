@@ -73,31 +73,6 @@ app.get("/.well-known/apple-app-site-association", (req, res) => {
   res.sendFile(path.join(__dirname, "well-known", "apple-app-site-association"));
 });
 
-// Rewrite stored asset URLs from old domain to new domain in all JSON
-// responses. MongoDB documents contain absolute URLs like
-// https://www.waxxapp.com/storage/<file> that were written before the
-// domain migration. This middleware transparently remaps them so both
-// the admin panel and the Flutter app receive j4market.com URLs without
-// a DB migration.
-app.use((req, res, next) => {
-  const _json = res.json.bind(res);
-  res.json = (body) => {
-    try {
-      if (body !== null && typeof body === "object") {
-        const rewritten = JSON.parse(
-          JSON.stringify(body).replace(
-            /https?:\/\/(www\.)?waxxapp\.com\//g,
-            "https://www.j4market.com/"
-          )
-        );
-        return _json(rewritten);
-      }
-    } catch (_) {}
-    return _json(body);
-  };
-  next();
-});
-
 //route.js
 const Route = require("./route");
 app.use("/", Route);
