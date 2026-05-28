@@ -518,7 +518,7 @@ exports.getliveSellerList = async (req, res) => {
             liveType: "$liveseller.liveType",
             isFollow: userId
               ? { $cond: [{ $eq: [{ $size: { $ifNull: ["$followerLookup", []] } }, 0] }, false, true] }
-              : false,
+              : { $literal: false },
           },
         },
       ]),
@@ -629,7 +629,7 @@ exports.getLiveByHistoryId = async (req, res) => {
           shareCount: { $ifNull: ["$liveHistory.shareCount", 0] },
           isFollow: userId
             ? { $cond: [{ $eq: [{ $size: { $ifNull: ["$followerLookup", []] } }, 0] }, false, true] }
-            : false,
+            : { $literal: false },
         },
       },
     ]);
