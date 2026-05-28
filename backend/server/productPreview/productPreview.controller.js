@@ -30,7 +30,7 @@ exports.renderProductPreview = async (req, res) => {
       product.seller?.businessName ||
       [product.seller?.firstName, product.seller?.lastName].filter(Boolean).join(" ") ||
       "J4market seller";
-    const canonicalUrl = `https://www.waxxapp.com/product/${productId}`;
+    const canonicalUrl = `https://www.j4market.com/product/${productId}`;
 
     res.set("Cache-Control", "public, max-age=300");
     return res.status(200).send(buildHtml({ productName, description, image, price, sellerName, canonicalUrl }));
@@ -106,7 +106,7 @@ function buildHtml({ productName, description, image, price, sellerName, canonic
         <a class="btn btn-secondary" id="install-btn" href="${playStoreUrl}">Install</a>
       </div>
     </div>
-    <div class="footer">Powered by <a href="https://www.waxxapp.com">J4market</a></div>
+    <div class="footer">Powered by <a href="https://www.j4market.com">J4market</a></div>
   </div>
   <script>
     (function () {
@@ -129,7 +129,7 @@ function buildHtml({ productName, description, image, price, sellerName, canonic
         if (isAndroid) {
           var fallback = encodeURIComponent(PLAY_STORE);
           var intentUrl =
-            'intent://www.waxxapp.com/product/' + PRODUCT_ID +
+            'intent://www.j4market.com/product/' + PRODUCT_ID +
             '#Intent;scheme=https;package=com.waxxapp;' +
             'S.browser_fallback_url=' + fallback + ';end';
           window.location.href = intentUrl;

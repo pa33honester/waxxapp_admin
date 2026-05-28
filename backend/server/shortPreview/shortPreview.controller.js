@@ -38,7 +38,7 @@ exports.renderShortPreview = async (req, res) => {
     const description = reel.description || `${sellerName} on J4market`;
     const thumbnail = reel.thumbnail || "";
     const video = reel.video || "";
-    const canonicalUrl = `https://www.waxxapp.com/short/${reelId}`;
+    const canonicalUrl = `https://www.j4market.com/short/${reelId}`;
 
     res.set("Cache-Control", "public, max-age=300");
     return res.status(200).send(buildHtml({ sellerName, description, thumbnail, video, canonicalUrl }));
@@ -115,7 +115,7 @@ function buildHtml({ sellerName, description, thumbnail, video, canonicalUrl }) 
         <a class="btn btn-secondary" id="install-btn" href="${playStoreUrl}">Install</a>
       </div>
     </div>
-    <div class="footer">Powered by <a href="https://www.waxxapp.com">J4market</a></div>
+    <div class="footer">Powered by <a href="https://www.j4market.com">J4market</a></div>
   </div>
   <script>
     // The "Open in app" button can't just <a href> back to the same URL â€”
@@ -148,7 +148,7 @@ function buildHtml({ sellerName, description, thumbnail, video, canonicalUrl }) 
         if (isAndroid) {
           var fallback = encodeURIComponent(PLAY_STORE);
           var intentUrl =
-            'intent://www.waxxapp.com/short/' + REEL_ID +
+            'intent://www.j4market.com/short/' + REEL_ID +
             '#Intent;scheme=https;package=com.waxxapp;' +
             'S.browser_fallback_url=' + fallback + ';end';
           window.location.href = intentUrl;

@@ -49,7 +49,7 @@ exports.renderLivePreview = async (req, res) => {
       isLiveNow = false;
     }
 
-    const canonicalUrl = `https://www.waxxapp.com/live/${liveSellingHistoryId}`;
+    const canonicalUrl = `https://www.j4market.com/live/${liveSellingHistoryId}`;
 
     res.set("Cache-Control", "public, max-age=60");
     return res.status(200).send(buildHtml({ sellerName, image, businessTag, isLiveNow, canonicalUrl, liveId: liveSellingHistoryId }));
@@ -133,7 +133,7 @@ function buildHtml({ sellerName, image, businessTag, isLiveNow, canonicalUrl, li
         <a class="btn btn-secondary" id="install-btn" href="${playStoreUrl}">Install</a>
       </div>
     </div>
-    <div class="footer">Powered by <a href="https://www.waxxapp.com">J4market</a></div>
+    <div class="footer">Powered by <a href="https://www.j4market.com">J4market</a></div>
   </div>
   <script>
     // Same handoff pattern as the /short/<id> preview â€” see that file for
@@ -159,7 +159,7 @@ function buildHtml({ sellerName, image, businessTag, isLiveNow, canonicalUrl, li
         if (isAndroid) {
           var fallback = encodeURIComponent(PLAY_STORE);
           var intentUrl =
-            'intent://www.waxxapp.com/live/' + LIVE_ID +
+            'intent://www.j4market.com/live/' + LIVE_ID +
             '#Intent;scheme=https;package=com.waxxapp;' +
             'S.browser_fallback_url=' + fallback + ';end';
           window.location.href = intentUrl;

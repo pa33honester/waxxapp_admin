@@ -80,11 +80,11 @@ function appOpenLink() {
     const cleaned = override.trim();
     if (
       cleaned &&
-      !/waxxapp\.com\/?$/i.test(cleaned) && // bare backend domain
-      !cleaned.startsWith("http://www.waxxapp.com") &&
-      !cleaned.startsWith("https://www.waxxapp.com/admin") &&
-      cleaned !== "https://www.waxxapp.com" &&
-      cleaned !== "https://www.waxxapp.com/"
+      !/j4market\.com\/?$/i.test(cleaned) && // bare backend domain
+      !cleaned.startsWith("http://www.j4market.com") &&
+      !cleaned.startsWith("https://www.j4market.com/admin") &&
+      cleaned !== "https://www.j4market.com" &&
+      cleaned !== "https://www.j4market.com/"
     ) {
       return cleaned;
     }
