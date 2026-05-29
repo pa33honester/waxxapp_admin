@@ -128,9 +128,13 @@ function buildHtml({ productName, description, image, price, sellerName, canonic
         e.preventDefault();
         if (isAndroid) {
           var fallback = encodeURIComponent(PLAY_STORE);
+          // Use waxxapp:// custom scheme — works without App Link domain
+          // verification (which may not be complete on debug builds or for
+          // newly-added paths). The waxxapp:// intent-filter in the manifest
+          // has no pathPrefix restriction so it always catches the Intent.
           var intentUrl =
-            'intent://www.j4market.com/product/' + PRODUCT_ID +
-            '#Intent;scheme=https;package=com.waxxapp;' +
+            'intent://product/' + PRODUCT_ID +
+            '#Intent;scheme=waxxapp;package=com.waxxapp;' +
             'S.browser_fallback_url=' + fallback + ';end';
           window.location.href = intentUrl;
           return;
