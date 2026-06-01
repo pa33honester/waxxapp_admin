@@ -76,6 +76,7 @@ jobs:
             --exclude='node_modules' \
             --exclude='public' \
             --exclude='storage' \
+            --exclude='private_storage' \
             --exclude='config.js' \
             --exclude='setting.js' \
             --exclude='.env' \
