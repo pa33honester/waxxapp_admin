@@ -13,14 +13,36 @@ import Searching from "../../extra/Searching";
 import { warningAccept } from "../../../util/Alert";
 import defaultImage from "../../../assets/images/default.jpg";
 import { colors } from "../../../util/SkeletonColor";
-import { secretKey } from "../../../util/config";
+import { secretKey, baseURL } from "../../../util/config";
 import Skeleton from "react-loading-skeleton";
+
+// Images are stored with the backend's baseURL at upload time.  When the
+// domain is renamed (waxxapp.com → j4market.com) stored URLs keep the old
+// origin, causing cross-domain <img> requests that a server-level Nginx
+// rule can block even though clicking the link (direct navigation) still
+// works.  We rewrite only known old backend origins to the current baseURL;
+// external CDN URLs (Google profile photos, etc.) are left untouched.
+const LEGACY_ORIGINS = ["https://www.waxxapp.com", "http://www.waxxapp.com"];
+
+const normalizeImageDomain = (url) => {
+  if (!url) return url;
+  try {
+    const currentOrigin = new URL(baseURL).origin;
+    for (const legacy of LEGACY_ORIGINS) {
+      if (url.startsWith(legacy)) {
+        return currentOrigin + url.slice(legacy.length);
+      }
+    }
+  } catch (e) {}
+  return url;
+};
 
 const buildPrivateFileUrl = (src) => {
   if (!src) return src;
+  const normalized = normalizeImageDomain(src);
   const token = sessionStorage.getItem("token") || "";
-  const sep = src.includes("?") ? "&" : "?";
-  return `${src}${sep}key=${encodeURIComponent(secretKey)}&token=${encodeURIComponent(token)}`;
+  const sep = normalized.includes("?") ? "&" : "?";
+  return `${normalized}${sep}key=${encodeURIComponent(secretKey)}&token=${encodeURIComponent(token)}`;
 };
 
 const SellerRequest = (props) => {
@@ -193,8 +215,8 @@ const mapData = [
         ) : (
           <>
             {row?.logo ? (
-              <a href={row.logo} target="_blank" rel="noreferrer">
-                <img src={row.logo} height={45} width={60} style={{ objectFit: "cover", borderRadius: "6px" }} alt="logo" onError={(e) => { e.target.onerror = null; e.target.src = defaultImage; }} />
+              <a href={normalizeImageDomain(row.logo)} target="_blank" rel="noreferrer">
+                <img src={normalizeImageDomain(row.logo)} height={45} width={60} style={{ objectFit: "cover", borderRadius: "6px" }} alt="logo" onError={(e) => { e.target.onerror = null; e.target.src = defaultImage; }} />
               </a>
             ) : (
               <img src={defaultImage} height={45} width={60} style={{ objectFit: "cover", borderRadius: "6px" }} alt="no logo" />
