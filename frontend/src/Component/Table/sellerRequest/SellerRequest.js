@@ -14,6 +14,7 @@ import { warningAccept } from "../../../util/Alert";
 import defaultImage from "../../../assets/images/default.jpg";
 import { colors } from "../../../util/SkeletonColor";
 import { secretKey } from "../../../util/config";
+import Skeleton from "react-loading-skeleton";
 
 const buildPrivateFileUrl = (src) => {
   if (!src) return src;
@@ -21,7 +22,6 @@ const buildPrivateFileUrl = (src) => {
   const sep = src.includes("?") ? "&" : "?";
   return `${src}${sep}key=${encodeURIComponent(secretKey)}&token=${encodeURIComponent(token)}`;
 };
-import Skeleton from "react-loading-skeleton";
 
 const SellerRequest = (props) => {
   const [page, setPage] = useState(0);
