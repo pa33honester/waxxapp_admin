@@ -13,6 +13,14 @@ import Searching from "../../extra/Searching";
 import { warningAccept } from "../../../util/Alert";
 import defaultImage from "../../../assets/images/default.jpg";
 import { colors } from "../../../util/SkeletonColor";
+import { secretKey } from "../../../util/config";
+
+const buildPrivateFileUrl = (src) => {
+  if (!src) return src;
+  const token = sessionStorage.getItem("token") || "";
+  const sep = src.includes("?") ? "&" : "?";
+  return `${src}${sep}key=${encodeURIComponent(secretKey)}&token=${encodeURIComponent(token)}`;
+};
 import Skeleton from "react-loading-skeleton";
 
 const SellerRequest = (props) => {
@@ -206,12 +214,12 @@ const mapData = [
         ) : (
           <>
             {row?.govIdFront ? (
-              <a href={row.govIdFront} target="_blank" rel="noreferrer">
-                <img src={row.govIdFront} height={45} width={60} style={{ objectFit: "cover", borderRadius: "6px" }} alt="govIdFront" onError={(e) => { e.target.onerror = null; e.target.src = defaultImage; }} />
+              <a href={buildPrivateFileUrl(row.govIdFront)} target="_blank" rel="noreferrer">
+                <img src={buildPrivateFileUrl(row.govIdFront)} height={45} width={60} style={{ objectFit: "cover", borderRadius: "6px" }} alt="govIdFront" onError={(e) => { e.target.onerror = null; e.target.src = defaultImage; }} />
               </a>
             ) : row?.govId ? (
-              <a href={row.govId} target="_blank" rel="noreferrer">
-                <img src={row.govId} height={45} width={60} style={{ objectFit: "cover", borderRadius: "6px" }} alt="govId" onError={(e) => { e.target.onerror = null; e.target.src = defaultImage; }} />
+              <a href={buildPrivateFileUrl(row.govId)} target="_blank" rel="noreferrer">
+                <img src={buildPrivateFileUrl(row.govId)} height={45} width={60} style={{ objectFit: "cover", borderRadius: "6px" }} alt="govId" onError={(e) => { e.target.onerror = null; e.target.src = defaultImage; }} />
               </a>
             ) : (
               <span className="text-white">-</span>
@@ -231,8 +239,8 @@ const mapData = [
         ) : (
           <>
             {row?.govIdBack ? (
-              <a href={row.govIdBack} target="_blank" rel="noreferrer">
-                <img src={row.govIdBack} height={45} width={60} style={{ objectFit: "cover", borderRadius: "6px" }} alt="govIdBack" onError={(e) => { e.target.onerror = null; e.target.src = defaultImage; }} />
+              <a href={buildPrivateFileUrl(row.govIdBack)} target="_blank" rel="noreferrer">
+                <img src={buildPrivateFileUrl(row.govIdBack)} height={45} width={60} style={{ objectFit: "cover", borderRadius: "6px" }} alt="govIdBack" onError={(e) => { e.target.onerror = null; e.target.src = defaultImage; }} />
               </a>
             ) : (
               <span className="text-white">-</span>
@@ -252,8 +260,8 @@ const mapData = [
         ) : (
           <>
             {row?.registrationCert ? (
-              <a href={row.registrationCert} target="_blank" rel="noreferrer">
-                <img src={row.registrationCert} height={45} width={60} style={{ objectFit: "cover", borderRadius: "6px" }} alt="registrationCert" onError={(e) => { e.target.onerror = null; e.target.src = defaultImage; }} />
+              <a href={buildPrivateFileUrl(row.registrationCert)} target="_blank" rel="noreferrer">
+                <img src={buildPrivateFileUrl(row.registrationCert)} height={45} width={60} style={{ objectFit: "cover", borderRadius: "6px" }} alt="registrationCert" onError={(e) => { e.target.onerror = null; e.target.src = defaultImage; }} />
               </a>
             ) : (
               <span className="text-white">-</span>
@@ -273,8 +281,8 @@ const mapData = [
         ) : (
           <>
             {row?.addressProof ? (
-              <a href={row.addressProof} target="_blank" rel="noreferrer">
-                <img src={row.addressProof} height={45} width={60} style={{ objectFit: "cover", borderRadius: "6px" }} alt="addressProof" onError={(e) => { e.target.onerror = null; e.target.src = defaultImage; }} />
+              <a href={buildPrivateFileUrl(row.addressProof)} target="_blank" rel="noreferrer">
+                <img src={buildPrivateFileUrl(row.addressProof)} height={45} width={60} style={{ objectFit: "cover", borderRadius: "6px" }} alt="addressProof" onError={(e) => { e.target.onerror = null; e.target.src = defaultImage; }} />
               </a>
             ) : (
               <span className="text-white">-</span>

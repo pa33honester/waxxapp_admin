@@ -78,6 +78,8 @@ exports.serve = async (req, res) => {
         userId,
         $or: [
           { govId: { $regex: safe } },
+          { govIdFront: { $regex: safe } },
+          { govIdBack: { $regex: safe } },
           { addressProof: { $regex: safe } },
           { registrationCert: { $regex: safe } },
         ],
@@ -86,6 +88,8 @@ exports.serve = async (req, res) => {
         userId,
         $or: [
           { govId: { $regex: safe } },
+          { govIdFront: { $regex: safe } },
+          { govIdBack: { $regex: safe } },
           { addressProof: { $regex: safe } },
           { registrationCert: { $regex: safe } },
         ],
