@@ -150,6 +150,7 @@ function buildHtml({ sellerName, description, thumbnail, video, canonicalUrl }) 
           var intentUrl =
             'intent://www.j4market.com/short/' + REEL_ID +
             '#Intent;scheme=https;package=com.waxxapp;' +
+            'launchFlags=0x30000000;' +
             'S.browser_fallback_url=' + fallback + ';end';
           window.location.href = intentUrl;
           return;

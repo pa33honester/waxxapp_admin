@@ -135,6 +135,7 @@ function buildHtml({ productName, description, image, price, sellerName, canonic
           var intentUrl =
             'intent://product/' + PRODUCT_ID +
             '#Intent;scheme=waxxapp;package=com.waxxapp;' +
+            'launchFlags=0x30000000;' +
             'S.browser_fallback_url=' + fallback + ';end';
           window.location.href = intentUrl;
           return;

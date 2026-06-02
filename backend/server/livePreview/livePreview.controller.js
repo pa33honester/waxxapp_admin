@@ -161,6 +161,7 @@ function buildHtml({ sellerName, image, businessTag, isLiveNow, canonicalUrl, li
           var intentUrl =
             'intent://www.j4market.com/live/' + LIVE_ID +
             '#Intent;scheme=https;package=com.waxxapp;' +
+            'launchFlags=0x30000000;' +
             'S.browser_fallback_url=' + fallback + ';end';
           window.location.href = intentUrl;
           return;
