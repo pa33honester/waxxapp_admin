@@ -73,10 +73,6 @@ const Setting = (props) => {
     withdrawLimit: "",
     cancelOrderCharges: "",
     adminCommissionCharges: "",
-    razorPayId: "",
-    razorSecretKey: "",
-    stripePublishableKey: "",
-    stripeSecretKey: "",
     privateKey,
   });
 

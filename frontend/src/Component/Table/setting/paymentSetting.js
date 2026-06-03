@@ -10,19 +10,13 @@ import {
 import { getWithdraw } from "../../store/withdraw/withdraw.action";
 import Button from "../../extra/Button";
 import InfoTooltip from "../../../Component/extra/InfoTooltip";
-import { flutterWaveContent, paystackContent, razorpayContent, stripeContent } from "../../../Component/extra/infoContent";
+import { flutterWaveContent, paystackContent } from "../../../Component/extra/infoContent";
 
 const PaymentSetting = (props) => {
   const { setting } = useSelector((state) => state.setting);
   const dispatch = useDispatch();
   const [cancelOrderCharges, setCancelOrderCharges] = useState();
   const [adminCommissionCharges, setAdminCommissionCharges] = useState();
-  const [razorPayId, setRazorPayId] = useState("");
-  const [razorSecretKey, setRazorSecretKey] = useState("");
-  const [razorPaySwitch, setRazorPaySwitch] = useState(false);
-  const [stripePublishableKey, setStripePublishableKey] = useState("");
-  const [stripeSecretKey, setStripeSecretKey] = useState("");
-  const [stripeSwitch, setStripeSwitch] = useState(false);
   const [flutterWaveSwitch, setFlutterWaveSwitch] = useState(false);
   const [isCashOnDelivery, setIsCashOnDelivery] = useState(false);
   const [flutterWaveId, setFlutterWaveId] = useState("");
@@ -38,10 +32,6 @@ const PaymentSetting = (props) => {
     agoraCertificate: "",
     cancelOrderCharges: "",
     adminCommissionCharges: "",
-    razorPayId: "",
-    razorSecretKey: "",
-    stripePublishableKey: "",
-    stripeSecretKey: "",
     flutterWaveId: ""
   });
 
@@ -56,17 +46,6 @@ const PaymentSetting = (props) => {
   useEffect(() => {
     setCancelOrderCharges(setting?.cancelOrderCharges);
     setAdminCommissionCharges(setting?.adminCommissionCharges);
-    // box 4
-    setRazorPayId(setting?.razorPayId);
-    setRazorSecretKey(setting?.razorSecretKey);
-    setRazorPaySwitch(setting?.razorPaySwitch);
-    // box 5
-    setStripePublishableKey(setting?.stripePublishableKey);
-    setStripeSecretKey(setting?.stripeSecretKey);
-    setStripeSwitch(setting?.stripeSwitch);
-
-    // box 6
-
     setFlutterWaveSwitch(setting?.flutterWaveSwitch)
     setIsCashOnDelivery(setting?.isCashOnDelivery)
     setFlutterWaveId(setting?.flutterWaveId)
@@ -78,45 +57,14 @@ const PaymentSetting = (props) => {
   }, [setting]);
 
   const handleSubmit = () => {
-    if (
-      !razorPayId ||
-      !razorSecretKey ||
-      !stripePublishableKey ||
-      !stripeSecretKey ||
-      !flutterWaveId
-    ) {
-      let error = {};
-
-
-
-      if (!razorPayId) error.razorPayId = "RazorPay Id is requird!";
-      if (!razorSecretKey)
-        error.razorSecretKey = "RazorSecretKey Id is requird!";
-      if (!stripePublishableKey)
-        error.stripePublishableKey = "stripePublishableKey is required";
-      if (!stripeSecretKey)
-        error.stripeSecretKey = "stripeSecretKey is required";
-
-      if (!flutterWaveId)
-        error.flutterWaveId = "flutterWaveId is required";
-      return setError({ ...error });
-    } else {
-      let settingData = {
-
-        razorPayId,
-        razorSecretKey,
-        stripePublishableKey,
-        stripeSecretKey,
-        flutterWaveId,
-        // Paystack keys are optional — backend treats empty strings as
-        // "leave existing" via undefined-check, so a blank field doesn't
-        // wipe a previously-saved key.
-        paystackPublicKey,
-        paystackSecretKey,
-      };
-
-      props.updateSetting(settingData, setting?._id);
+    if (!flutterWaveId) {
+      return setError({ ...error, flutterWaveId: "flutterWaveId is required" });
     }
+    props.updateSetting({
+      flutterWaveId,
+      paystackPublicKey,
+      paystackSecretKey,
+    }, setting?._id);
   };
 
   const handleClick = (type) => {
@@ -132,151 +80,6 @@ const PaymentSetting = (props) => {
           </div>
           <div className="settingMain">
             <div className="row">
-              {/*-------------- Box 1 --------------*/}
-
-              {/* Box 4  */}
-
-              <SettingBox
-                submit={(e) => handleSubmit(e)}
-                title={`Razor Payment Setting`}
-                toggleSwitch={{
-                  switchName: "RazorPay",
-                  switchValue: razorPaySwitch,
-                  handleClick: () => {
-                    handleClick("razorPay");
-                  },
-                }}
-              >
-                <Input
-                  type={`text`}
-                  label={`RazorPay Id`}
-                  value={razorPayId}
-                  newClass={`col-12`}
-                  placeholder={`Enter You razorPayId....`}
-                  errorMessage={error.razorPayId && error.razorPayId}
-                  onChange={(e) => {
-                    setRazorPayId(e.target.value);
-                    if (!e.target.value) {
-                      return setError({
-                        ...error,
-                        razorPayId: `razorPayId Is Required`,
-                      });
-                    } else {
-                      return setError({
-                        ...error,
-                        razorPayId: "",
-                      });
-                    }
-                  }}
-                />
-
-                <Input
-                  type={`text`}
-                  label={`Razor Secret Key`}
-                  value={razorSecretKey}
-                  newClass={`col-12`}
-                  placeholder={`Enter You RazorSecretKey....`}
-                  errorMessage={error.razorSecretKey && error.razorSecretKey}
-                  onChange={(e) => {
-                    setRazorSecretKey(e.target.value);
-                    if (!e.target.value) {
-                      return setError({
-                        ...error,
-                        razorSecretKey: `Razor Secret Key Is Required`,
-                      });
-                    } else {
-                      return setError({
-                        ...error,
-                        razorSecretKey: "",
-                      });
-                    }
-                  }}
-                />
-                <div style={{
-                  width: "100%",
-                  display: "flex",
-                  justifyContent: "flex-end"
-                }}>
-                  <InfoTooltip
-                    title="Razor Pay Setting"
-                    content={razorpayContent}
-                  />
-                </div>
-
-              </SettingBox>
-
-              {/* Box 5  */}
-
-              <SettingBox
-                submit={(e) => handleSubmit(e)}
-                title={`Stripe Payment Setting`}
-                toggleSwitch={{
-                  switchName: "Stripe",
-                  switchValue: stripeSwitch,
-                  handleClick: () => {
-                    handleClick("stripe");
-                  },
-                }}
-              >
-                <Input
-                  type={`text`}
-                  label={`Stripe Publishable Key`}
-                  value={stripePublishableKey}
-                  newClass={`col-12`}
-                  placeholder={`Enter You stripe....`}
-                  errorMessage={
-                    error.stripePublishableKey && error.stripePublishableKey
-                  }
-                  onChange={(e) => {
-                    setStripePublishableKey(e.target.value);
-                    if (!e.target.value) {
-                      return setError({
-                        ...error,
-                        stripePublishableKey: `Stripe Publishable Key Is Required`,
-                      });
-                    } else {
-                      return setError({
-                        ...error,
-                        stripePublishableKey: "",
-                      });
-                    }
-                  }}
-                />
-
-                <Input
-                  type={`text`}
-                  label={`Stripe Secret Key`}
-                  value={stripeSecretKey}
-                  newClass={`col-12`}
-                  placeholder={`Enter You Stripe Secret Key....`}
-                  errorMessage={error.stripeSecretKey && error.stripeSecretKey}
-                  onChange={(e) => {
-                    setStripeSecretKey(e.target.value);
-                    if (!e.target.value) {
-                      return setError({
-                        ...error,
-                        stripeSecretKey: `Stripe Secret Key Is Required`,
-                      });
-                    } else {
-                      return setError({
-                        ...error,
-                        stripeSecretKey: "",
-                      });
-                    }
-                  }}
-                />
-                <div style={{
-                  width: "100%",
-                  display: "flex",
-                  justifyContent: "flex-end"
-                }}>
-                  <InfoTooltip
-                    title="Stripe Pay Setting"
-                    content={stripeContent}
-                  />
-                </div>
-              </SettingBox>
-
               {/* box 3 */}
 
               {/* <SettingBox title={`Charges Setting`}>

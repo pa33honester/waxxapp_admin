@@ -33,14 +33,6 @@ const settingSchema = new mongoose.Schema(
     zegoAppId: { type: String, default: "ZEGO APP ID" },
     zegoAppSignIn: { type: String, default: "ZEGO APP SIGN IN" },
 
-    stripePublishableKey: { type: String, default: "STRIPE PUBLISHABLE KEY" },
-    stripeSecretKey: { type: String, default: "STRIPE SECRET KEY" },
-    stripeSwitch: { type: Boolean, default: false },
-
-    razorPayId: { type: String, default: "RAZOR PAY ID" },
-    razorSecretKey: { type: String, default: "RAZOR SECRET KEY" },
-    razorPaySwitch: { type: Boolean, default: false },
-
     flutterWaveId: { type: String, default: "FLUTTER WAVE ID" },
     flutterWaveSwitch: { type: Boolean, default: false },
 

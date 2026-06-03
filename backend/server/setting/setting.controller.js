@@ -16,10 +16,6 @@ exports.update = async (req, res) => {
     setting.termsAndConditionsLink = req.body.termsAndConditionsLink ? req.body.termsAndConditionsLink : setting.termsAndConditionsLink;
     setting.zegoAppId = req.body.zegoAppId ? req.body.zegoAppId : setting.zegoAppId;
     setting.zegoAppSignIn = req.body.zegoAppSignIn ? req.body.zegoAppSignIn : setting.zegoAppSignIn;
-    setting.stripePublishableKey = req.body.stripePublishableKey ? req.body.stripePublishableKey : setting.stripePublishableKey;
-    setting.stripeSecretKey = req.body.stripeSecretKey ? req.body.stripeSecretKey : setting.stripeSecretKey;
-    setting.razorPayId = req.body.razorPayId ? req.body.razorPayId : setting.razorPayId;
-    setting.razorSecretKey = req.body.razorSecretKey ? req.body.razorSecretKey : setting.razorSecretKey;
     setting.resendApiKey = req.body.resendApiKey ? req.body.resendApiKey : setting.resendApiKey;
     setting.openaiApiKey = req.body.openaiApiKey ? req.body.openaiApiKey?.trim() : setting.openaiApiKey;
     setting.adminCommissionCharges = parseInt(req.body.adminCommissionCharges) ? parseInt(req.body.adminCommissionCharges) : setting.adminCommissionCharges;
@@ -60,11 +56,7 @@ exports.handleSwitch = async (req, res) => {
       return res.status(200).json({ status: false, message: "Setting does not found!!" });
     }
 
-    if (req.query.type === "stripe") {
-      setting.stripeSwitch = !setting.stripeSwitch;
-    } else if (req.query.type === "razorPay") {
-      setting.razorPaySwitch = !setting.razorPaySwitch;
-    } else if (req.query.type === "flutterWave") {
+    if (req.query.type === "flutterWave") {
       setting.flutterWaveSwitch = !setting.flutterWaveSwitch;
     } else if (req.query.type === "paystack") {
       setting.paystackSwitch = !setting.paystackSwitch;

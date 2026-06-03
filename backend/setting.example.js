@@ -28,14 +28,6 @@ module.exports = {
   "isCashOnDelivery": true,
 
   // Payment gateways — replace with real keys
-  "razorPaySwitch": false,
-  "razorPayId": "YOUR_RAZORPAY_KEY_ID",
-  "razorSecretKey": "YOUR_RAZORPAY_SECRET_KEY",
-
-  "stripeSwitch": false,
-  "stripePublishableKey": "YOUR_STRIPE_PUBLISHABLE_KEY",
-  "stripeSecretKey": "YOUR_STRIPE_SECRET_KEY",
-
   "flutterWaveSwitch": false,
   "flutterWaveId": "YOUR_FLUTTERWAVE_PUBLIC_KEY",
 
