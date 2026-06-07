@@ -625,11 +625,22 @@ exports.getReelsForUser = async (req, res) => {
       allReels = await Reel.aggregate([{ $match: { isFake: false } }, ...basePipeline, { $skip: skip }, { $limit: limit }]);
     }
 
-    if (reelId) {
+    if (reelId && mongoose.Types.ObjectId.isValid(reelId)) {
       const reelIndex = allReels.findIndex((r) => r._id.toString() === reelId.toString());
       if (reelIndex !== -1) {
         const [targetReel] = allReels.splice(reelIndex, 1);
         allReels.unshift(targetReel);
+      } else {
+        // Target reel is not in the current page (e.g. older than the newest
+        // `limit` reels). Fetch it separately so share links always land on
+        // the correct reel regardless of how old it is.
+        const [targetReel] = await Reel.aggregate([
+          { $match: { _id: new mongoose.Types.ObjectId(reelId), isFake: false } },
+          ...basePipeline,
+        ]);
+        if (targetReel) {
+          allReels.unshift(targetReel);
+        }
       }
     }
 
