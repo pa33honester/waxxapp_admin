@@ -540,30 +540,25 @@ exports.getReelsForUser = async (req, res) => {
     const limit = req.query.limit ? parseInt(req.query.limit) : 20;
     const skip = (start - 1) * limit;
 
-    // userId is optional — guests (share-link previews without an account)
-    // omit it. Authenticated users get personalised isLike / isFollow flags;
-    // guests receive false for both. A dummy ObjectId is used so the $lookup
-    // pipeline structure stays identical but matches nothing.
-    let lookupUserId = new mongoose.Types.ObjectId();
-    if (userId) {
-      if (!mongoose.Types.ObjectId.isValid(userId)) {
-        return res.status(200).json({ status: false, message: "Oops ! Invalid details!" });
-      }
-      const user = await User.findById(userId);
-      if (!user) {
-        return res.status(200).json({ status: false, message: "User not found." });
-      }
-      if (user.isBlock) {
-        return res.status(200).json({ status: false, message: "You are blocked by the admin." });
-      }
-      lookupUserId = user._id;
+    if (!userId) {
+      return res.status(200).json({ status: false, message: "Oops ! Invalid details!" });
+    }
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      return res.status(200).json({ status: false, message: "Oops ! Invalid details!" });
+    }
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(200).json({ status: false, message: "User not found." });
+    }
+    if (user.isBlock) {
+      return res.status(200).json({ status: false, message: "You are blocked by the admin." });
     }
 
     const basePipeline = [
       {
         $lookup: {
           from: "likehistoryofreels",
-          let: { reelId: "$_id", userId: lookupUserId },
+          let: { reelId: "$_id", userId: user._id },
           pipeline: [
             {
               $match: {
@@ -579,7 +574,7 @@ exports.getReelsForUser = async (req, res) => {
       {
         $lookup: {
           from: "followers",
-          let: { sellerId: "$sellerId", userId: lookupUserId },
+          let: { sellerId: "$sellerId", userId: user._id },
           pipeline: [
             {
               $match: {
