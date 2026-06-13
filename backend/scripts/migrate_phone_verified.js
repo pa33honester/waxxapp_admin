@@ -1,21 +1,30 @@
-// One-shot migration: add the phoneVerified flag to all existing users.
+// One-shot migration: add the phoneVerified flag to all existing users,
+// and set a default password ("123456") for any user who has no password
+// (primarily phone-signup users who never set one).
 //
 // What it does:
-//   1. Users with a non-null mobileNumber already went through phone OTP
-//      (either via Firebase mobile-login or the changePhone flow), so they
-//      are marked phoneVerified: true.
-//   2. All other users get phoneVerified: false and will be prompted to
-//      verify after their next login.
+//   1. Users with a non-null mobileNumber are marked phoneVerified: true.
+//   2. All other users get phoneVerified: false.
+//   3. Users with password: null get a default Cryptr-encrypted password
+//      of "123456" so they can log in via email + Forgot Password flow.
+//      Only users WITHOUT a password are affected — existing passwords
+//      are never overwritten.
 //
 // Usage (run once, against a backed-up DB — BEFORE deploying the backend
 // that adds the phoneVerified field to the schema):
 //   node scripts/migrate_phone_verified.js
 //
-// Idempotent — safe to re-run.
+// Idempotent — safe to re-run (step 3 skips users who already have a password).
 
 const mongoose = require("mongoose");
+const Cryptr = require("cryptr");
 const config = require("../config");
 const User = require("../server/user/user.model");
+
+// Must match the key used in user.controller.js
+const cryptr = new Cryptr("myTotallySecretKey");
+const DEFAULT_PASSWORD = "123456";
+const encryptedDefault = cryptr.encrypt(DEFAULT_PASSWORD);
 
 async function run() {
   await mongoose.connect(config.MONGODB_CONNECTION_STRING, {
@@ -37,6 +46,14 @@ async function run() {
     { $set: { phoneVerified: false } }
   );
   console.log(`phoneVerified=false → ${unverifiedResult.modifiedCount} users updated`);
+
+  // 3. Set default password for users who have no password at all.
+  //    Does NOT touch users who already have a password.
+  const passwordResult = await User.updateMany(
+    { password: null },
+    { $set: { password: encryptedDefault } }
+  );
+  console.log(`default password set → ${passwordResult.modifiedCount} users updated`);
 
   await mongoose.disconnect();
   console.log("done.");
