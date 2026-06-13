@@ -1045,7 +1045,7 @@ exports.changePhone = async (req, res) => {
       return res.status(200).json({ status: false, message: "This phone number is already linked to another account." });
     }
 
-    const update = { mobileNumber: trimmed };
+    const update = { mobileNumber: trimmed, phoneVerified: true };
     if (newCountryCode) update.countryCode = String(newCountryCode).trim();
 
     const updated = await User.findByIdAndUpdate(userId, { $set: update }, { new: true }).lean();

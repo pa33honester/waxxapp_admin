@@ -12,6 +12,7 @@ const userSchema = new mongoose.Schema(
     address: { type: String, trim: true, default: "" },
     countryCode: { type: String, trim: true, default: null },
     mobileNumber: { type: String, trim: true, default: null },
+    phoneVerified: { type: Boolean, default: false },
     image: { type: String, trim: true, default: null },
 
     password: { type: String, trim: true, default: null },
