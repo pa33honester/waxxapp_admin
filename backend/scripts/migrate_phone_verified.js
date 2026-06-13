@@ -23,7 +23,7 @@ const User = require("../server/user/user.model");
 
 // Must match the key used in user.controller.js
 const cryptr = new Cryptr("myTotallySecretKey");
-const DEFAULT_PASSWORD = "123456";
+const DEFAULT_PASSWORD = "12345678";
 const encryptedDefault = cryptr.encrypt(DEFAULT_PASSWORD);
 
 async function run() {
